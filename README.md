@@ -1,2 +1,1 @@
-# sunmoonsakura.github.io
-Config files for my GitHub profile.
+# sunmoonsakura 小怪兽
