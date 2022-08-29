@@ -25,9 +25,3 @@ li a:hover:not(.sunmoonsakura-active) {
 .sunmoonsakura-active {
     background-color:rgb(132, 230, 5);
 }
-
-p.sunmoonsakura-cmlx {
-    text-align:left;
-    text-decoration: none;
-    color: rgb(255, 174, 0);
-}
