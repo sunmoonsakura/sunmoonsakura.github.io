@@ -1,0 +1,1552 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>囧囧的小店</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4F46E5',
+                        secondary: '#10B981',
+                        accent: '#F59E0B',
+                        danger: '#EF4444',
+                        dark: '#1F2937',
+                        light: '#F9FAFB'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .text-shadow {
+                text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+            }
+            .game-container {
+                max-width: 800px;
+            }
+            .log-entry {
+                animation: fadeIn 0.5s ease-in-out;
+            }
+            .event-positive {
+                border-left: 3px solid #10B981;
+                padding-left: 5px;
+            }
+            .event-negative {
+                border-left: 3px solid #EF4444;
+                padding-left: 5px;
+            }
+            .event-special {
+                border-left: 3px solid #F59E0B;
+                padding-left: 5px;
+            }
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen font-sans text-dark">
+    <div class="container mx-auto px-4 py-8 flex flex-col items-center">
+        <header class="w-full max-w-3xl mb-6 text-center">
+            <h1 class="text-[clamp(1.8rem,5vw,3rem)] font-bold text-primary mb-2 text-shadow">囧囧的小店</h1>
+            <p class="text-gray-600 text-lg">喵喵喵，喵喵喵。</p>
+        </header>
+
+        <main class="game-container bg-white rounded-xl shadow-lg p-6 w-full">
+            <!-- 游戏状态面板 -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-600">资金</span>
+                        <span class="font-bold text-primary" id="money">¥1000</span>
+                    </div>
+                </div>
+                <div class="bg-green-50 p-4 rounded-lg border border-green-100">
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-600">日数</span>
+                        <span class="font-bold text-secondary" id="day">1</span>
+                    </div>
+                </div>
+                <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-100">
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-600">声誉</span>
+                        <span class="font-bold text-accent" id="reputation">50</span>
+                    </div>
+                </div>
+                <div class="bg-purple-50 p-4 rounded-lg border border-purple-100">
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-600">季节</span>
+                        <span class="font-bold text-purple-600" id="season">春季</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 游戏区域 -->
+            <div class="flex flex-col md:flex-row gap-6">
+                <!-- 左侧：主要操作区 -->
+                <div class="w-full md:w-2/3">
+                    <!-- 游戏状态显示 -->
+                    <div class="bg-gray-50 p-5 rounded-lg border border-gray-200 mb-6">
+                        <h2 class="text-xl font-bold mb-3 flex items-center">
+                            <i class="fa fa-info-circle mr-2 text-primary"></i>当前状态
+                        </h2>
+                        <div id="status-text" class="text-gray-700 leading-relaxed">
+                            欢迎来到你的街角小店！今天是你开业的第一天。你有¥1000启动资金，声誉50。请开始采购商品，准备迎接顾客吧！
+                        </div>
+                    </div>
+
+                    <!-- 操作面板 -->
+                    <div class="bg-gray-50 p-5 rounded-lg border border-gray-200 mb-6">
+                        <h2 class="text-xl font-bold mb-3 flex items-center">
+                            <i class="fa fa-cogs mr-2 text-primary"></i>操作面板
+                        </h2>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                            <button id="btn-purchase" class="bg-primary hover:bg-primary/90 text-white py-2 px-4 rounded-md transition flex items-center justify-center">
+                                <i class="fa fa-shopping-cart mr-2"></i>采购商品
+                            </button>
+                            <button id="btn-pricing" class="bg-accent hover:bg-accent/90 text-white py-2 px-4 rounded-md transition flex items-center justify-center">
+                                <i class="fa fa-tag mr-2"></i>设置价格
+                            </button>
+                            <button id="btn-open" class="bg-secondary hover:bg-secondary/90 text-white py-2 px-4 rounded-md transition flex items-center justify-center">
+                                <i class="fa fa-sign-in mr-2"></i>开门营业
+                            </button>
+                            <button id="btn-promotion" class="bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-md transition flex items-center justify-center">
+                                <i class="fa fa-bullhorn mr-2"></i>促销活动
+                            </button>
+                            <button id="btn-upgrade" class="bg-teal-600 hover:bg-teal-700 text-white py-2 px-4 rounded-md transition flex items-center justify-center">
+                                <i class="fa fa-hammer mr-2"></i>店铺升级
+                            </button>
+                            <button id="btn-next-day" class="bg-dark hover:bg-dark/90 text-white py-2 px-4 rounded-md transition flex items-center justify-center">
+                                <i class="fa fa-calendar mr-2"></i>结束今天
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 顾客日志 -->
+                    <div class="bg-gray-50 p-5 rounded-lg border border-gray-200">
+                        <h2 class="text-xl font-bold mb-3 flex items-center">
+                            <i class="fa fa-book mr-2 text-primary"></i>经营日志
+                        </h2>
+                        <div id="log-container" class="max-h-64 overflow-y-auto text-gray-700 space-y-2 text-sm">
+                            <div class="log-entry">游戏开始！你拥有一家街角小店。</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右侧：信息面板 -->
+                <div class="w-full md:w-1/3">
+                    <!-- 库存信息 -->
+                    <div class="bg-gray-50 p-5 rounded-lg border border-gray-200 mb-6">
+                        <h2 class="text-xl font-bold mb-3 flex items-center">
+                            <i class="fa fa-archive mr-2 text-primary"></i>库存状况
+                        </h2>
+                        <div id="inventory" class="space-y-2 max-h-64 overflow-y-auto">
+                            <!-- 库存项目将在这里动态生成 -->
+                            <div class="text-gray-500 italic">尚未采购任何商品</div>
+                        </div>
+                    </div>
+
+                    <!-- 特殊信息 -->
+                    <div class="bg-blue-50 p-5 rounded-lg border border-blue-100 mb-6">
+                        <h2 class="text-xl font-bold mb-3 flex items-center">
+                            <i class="fa fa-star mr-2 text-primary"></i>特殊信息
+                        </h2>
+                        <div id="special-info" class="text-gray-700 text-sm space-y-2">
+                            <p>• 开业初期，建议采购多种商品吸引顾客</p>
+                            <p>• 注意季节性商品的需求变化</p>
+                        </div>
+                    </div>
+
+                    <!-- 提示信息 -->
+                    <div class="bg-amber-50 p-5 rounded-lg border border-amber-100">
+                        <h2 class="text-xl font-bold mb-3 flex items-center">
+                            <i class="fa fa-lightbulb-o mr-2 text-amber-600"></i>经营提示
+                        </h2>
+                        <div id="tips" class="text-gray-700 text-sm space-y-2">
+                            <p>• 周末顾客会比平时多20%</p>
+                            <p>• 节日期间特定商品需求会激增</p>
+                            <p>• 举办促销活动可以提高短期销量</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- 模态框 - 采购商品 -->
+        <div id="purchase-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+            <div class="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                <h3 class="text-xl font-bold mb-4 flex items-center">
+                    <i class="fa fa-shopping-cart mr-2 text-primary"></i>采购商品
+                </h3>
+                <div class="mb-4">
+                    <p class="text-gray-600 mb-2">当前资金: <span id="modal-money" class="font-bold text-primary">¥1000</span></p>
+                    
+                    <!-- 商品分类标签 -->
+                    <div class="flex flex-wrap gap-2 mb-4">
+                        <button class="category-btn bg-primary text-white px-3 py-1 rounded-full text-sm active" data-category="all">全部商品</button>
+                        <button class="category-btn bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded-full text-sm" data-category="food">食品饮料</button>
+                        <button class="category-btn bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded-full text-sm" data-category="daily">日用品</button>
+                        <button class="category-btn bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded-full text-sm" data-category="seasonal">季节性商品</button>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div id="purchase-items">
+                            <!-- 采购项目将在这里动态生成 -->
+                        </div>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3">
+                    <button id="cancel-purchase" class="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-100 transition">
+                        取消
+                    </button>
+                    <button id="confirm-purchase" class="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition">
+                        确认采购
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 模态框 - 设置价格 -->
+        <div id="pricing-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+            <div class="bg-white rounded-xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+                <h3 class="text-xl font-bold mb-4 flex items-center">
+                    <i class="fa fa-tag mr-2 text-accent"></i>设置商品价格
+                </h3>
+                <div id="pricing-items" class="space-y-3 mb-4">
+                    <!-- 价格设置项目将在这里动态生成 -->
+                    <div class="text-gray-500 italic">没有可设置价格的商品，请先采购</div>
+                </div>
+                <div class="flex justify-end gap-3">
+                    <button id="cancel-pricing" class="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-100 transition">
+                        取消
+                    </button>
+                    <button id="confirm-pricing" class="px-4 py-2 bg-accent text-white rounded-md hover:bg-accent/90 transition">
+                        确认设置
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 模态框 - 促销活动 -->
+        <div id="promotion-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+            <div class="bg-white rounded-xl p-6 w-full max-w-md">
+                <h3 class="text-xl font-bold mb-4 flex items-center">
+                    <i class="fa fa-bullhorn mr-2 text-purple-600"></i>促销活动
+                </h3>
+                <p class="text-gray-600 mb-4">选择要举办的促销活动（需要支付费用）：</p>
+                <div id="promotion-items" class="space-y-3 mb-4">
+                    <div class="border border-gray-200 rounded-lg p-3 hover:bg-gray-50 cursor-pointer promotion-option" data-type="discount" data-cost="100">
+                        <div class="font-bold">全场折扣</div>
+                        <div class="text-sm text-gray-600">所有商品8折销售，吸引更多顾客</div>
+                        <div class="text-purple-600 mt-1">费用: ¥100</div>
+                    </div>
+                    <div class="border border-gray-200 rounded-lg p-3 hover:bg-gray-50 cursor-pointer promotion-option" data-type="buyone" data-cost="50">
+                        <div class="font-bold">买一送一</div>
+                        <div class="text-sm text-gray-600">指定商品买一送一，快速清理库存</div>
+                        <div class="text-purple-600 mt-1">费用: ¥50</div>
+                    </div>
+                    <div class="border border-gray-200 rounded-lg p-3 hover:bg-gray-50 cursor-pointer promotion-option" data-type="freegift" data-cost="80">
+                        <div class="font-bold">满额赠礼</div>
+                        <div class="text-sm text-gray-600">消费满一定金额赠送小礼品，提高客单价</div>
+                        <div class="text-purple-600 mt-1">费用: ¥80</div>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3">
+                    <button id="cancel-promotion" class="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-100 transition">
+                        取消
+                    </button>
+                    <button id="confirm-promotion" class="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition" disabled>
+                        确认举办
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 模态框 - 店铺升级 -->
+        <div id="upgrade-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+            <div class="bg-white rounded-xl p-6 w-full max-w-md">
+                <h3 class="text-xl font-bold mb-4 flex items-center">
+                    <i class="fa fa-hammer mr-2 text-teal-600"></i>店铺升级
+                </h3>
+                <p class="text-gray-600 mb-4">投资升级你的店铺，提升经营能力：</p>
+                <div id="upgrade-items" class="space-y-3 mb-4">
+                    <div class="border border-gray-200 rounded-lg p-3 hover:bg-gray-50 cursor-pointer upgrade-option" data-type="shelves" data-cost="500" data-level="1">
+                        <div class="font-bold">扩展货架</div>
+                        <div class="text-sm text-gray-600">增加库存容量，可容纳更多商品</div>
+                        <div class="text-teal-600 mt-1">费用: ¥500 | 当前等级: 1</div>
+                    </div>
+                    <div class="border border-gray-200 rounded-lg p-3 hover:bg-gray-50 cursor-pointer upgrade-option" data-type="service" data-cost="800" data-level="1">
+                        <div class="font-bold">提升服务</div>
+                        <div class="text-sm text-gray-600">提高顾客满意度，增加声誉增长速度</div>
+                        <div class="text-teal-600 mt-1">费用: ¥800 | 当前等级: 1</div>
+                    </div>
+                    <div class="border border-gray-200 rounded-lg p-3 hover:bg-gray-50 cursor-pointer upgrade-option" data-type="advertise" data-cost="1200" data-level="1">
+                        <div class="font-bold">广告宣传</div>
+                        <div class="text-sm text-gray-600">吸引更多顾客，提高店铺知名度</div>
+                        <div class="text-teal-600 mt-1">费用: ¥1200 | 当前等级: 1</div>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3">
+                    <button id="cancel-upgrade" class="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-100 transition">
+                        取消
+                    </button>
+                    <button id="confirm-upgrade" class="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 transition" disabled>
+                        确认升级
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 模态框 - 营业结果 -->
+        <div id="result-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+            <div class="bg-white rounded-xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+                <h3 class="text-xl font-bold mb-4 flex items-center">
+                    <i class="fa fa-line-chart mr-2 text-secondary"></i>今日营业结果
+                </h3>
+                <div id="result-details" class="space-y-3 mb-4">
+                    <!-- 营业结果将在这里动态生成 -->
+                </div>
+                <div class="flex justify-end">
+                    <button id="close-result" class="px-4 py-2 bg-secondary text-white rounded-md hover:bg-secondary/90 transition">
+                        确定
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 模态框 - 特殊事件 -->
+        <div id="event-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+            <div class="bg-white rounded-xl p-6 w-full max-w-md">
+                <h3 class="text-xl font-bold mb-4 flex items-center">
+                    <i class="fa fa-exclamation-circle mr-2 text-accent"></i>特殊事件
+                </h3>
+                <div id="event-details" class="space-y-3 mb-4">
+                    <!-- 事件详情将在这里动态生成 -->
+                </div>
+                <div id="event-choices" class="space-y-2 mb-4 hidden">
+                    <!-- 事件选择将在这里动态生成 -->
+                </div>
+                <div class="flex justify-end">
+                    <button id="close-event" class="px-4 py-2 bg-accent text-white rounded-md hover:bg-accent/90 transition">
+                        确定
+                    </button>
+                    <button id="event-confirm-choice" class="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition hidden">
+                        确认选择
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <footer class="mt-8 text-center text-gray-500 text-sm">
+            <p>囧囧的小店</p>
+        </footer>
+    </div>
+
+    <script>
+        // 游戏数据
+        const gameData = {
+            money: 1000,
+            day: 1,
+            reputation: 50,
+            season: "春季", // 春季、夏季、秋季、冬季
+            inventory: {},
+            prices: {},
+            upgrades: {
+                shelves: 1,    // 货架等级，影响库存容量
+                service: 1,    // 服务等级，影响声誉增长
+                advertise: 1   // 广告等级，影响顾客数量
+            },
+            currentPromotion: null, // 当前促销活动
+            specialEvents: [],      // 特殊事件记录
+            products: {
+                // 食品饮料类
+                apple: { name: "苹果", cost: 5, basePrice: 8, demand: { min: 3, max: 10 }, category: "food" },
+                banana: { name: "香蕉", cost: 3, basePrice: 5, demand: { min: 5, max: 15 }, category: "food" },
+                bread: { name: "面包", cost: 8, basePrice: 12, demand: { min: 2, max: 8 }, category: "food" },
+                milk: { name: "牛奶", cost: 6, basePrice: 10, demand: { min: 4, max: 12 }, category: "food" },
+                egg: { name: "鸡蛋", cost: 10, basePrice: 15, demand: { min: 2, max: 7 }, category: "food" },
+                water: { name: "矿泉水", cost: 2, basePrice: 3, demand: { min: 6, max: 20 }, category: "food" },
+                noodle: { name: "方便面", cost: 4, basePrice: 6, demand: { min: 3, max: 10 }, category: "food" },
+                cookie: { name: "饼干", cost: 7, basePrice: 10, demand: { min: 2, max: 8 }, category: "food" },
+                juice: { name: "果汁", cost: 5, basePrice: 8, demand: { min: 3, max: 9 }, category: "food" },
+                chocolate: { name: "巧克力", cost: 9, basePrice: 15, demand: { min: 1, max: 5 }, category: "food" },
+                
+                // 日用品类
+                tissue: { name: "纸巾", cost: 3, basePrice: 5, demand: { min: 4, max: 12 }, category: "daily" },
+                soap: { name: "香皂", cost: 4, basePrice: 7, demand: { min: 2, max: 6 }, category: "daily" },
+                toothbrush: { name: "牙刷", cost: 5, basePrice: 9, demand: { min: 1, max: 4 }, category: "daily" },
+                shampoo: { name: "洗发水", cost: 15, basePrice: 25, demand: { min: 1, max: 3 }, category: "daily" },
+                battery: { name: "电池", cost: 2, basePrice: 4, demand: { min: 2, max: 7 }, category: "daily" },
+                notebook: { name: "笔记本", cost: 3, basePrice: 5, demand: { min: 2, max: 5 }, category: "daily" },
+                pen: { name: "钢笔", cost: 8, basePrice: 12, demand: { min: 1, max: 3 }, category: "daily" },
+                
+                // 季节性商品
+                umbrella: { name: "雨伞", cost: 20, basePrice: 35, demand: { min: 0, max: 5 }, category: "seasonal", seasons: ["春季", "夏季"] },
+                fan: { name: "风扇", cost: 80, basePrice: 130, demand: { min: 0, max: 2 }, category: "seasonal", seasons: ["夏季"] },
+                scarf: { name: "围巾", cost: 30, basePrice: 50, demand: { min: 0, max: 3 }, category: "seasonal", seasons: ["秋季", "冬季"] },
+                gloves: { name: "手套", cost: 25, basePrice: 45, demand: { min: 0, max: 3 }, category: "seasonal", seasons: ["冬季"] },
+                heater: { name: "取暖器", cost: 150, basePrice: 250, demand: { min: 0, max: 1 }, category: "seasonal", seasons: ["冬季"] },
+                sunglasses: { name: "太阳镜", cost: 40, basePrice: 70, demand: { min: 0, max: 2 }, category: "seasonal", seasons: ["夏季"] }
+            }
+        };
+
+        // DOM 元素
+        const elements = {
+            money: document.getElementById('money'),
+            day: document.getElementById('day'),
+            reputation: document.getElementById('reputation'),
+            season: document.getElementById('season'),
+            statusText: document.getElementById('status-text'),
+            inventory: document.getElementById('inventory'),
+            logContainer: document.getElementById('log-container'),
+            specialInfo: document.getElementById('special-info'),
+            
+            // 按钮
+            btnPurchase: document.getElementById('btn-purchase'),
+            btnPricing: document.getElementById('btn-pricing'),
+            btnOpen: document.getElementById('btn-open'),
+            btnPromotion: document.getElementById('btn-promotion'),
+            btnUpgrade: document.getElementById('btn-upgrade'),
+            btnNextDay: document.getElementById('btn-next-day'),
+            
+            // 采购模态框
+            purchaseModal: document.getElementById('purchase-modal'),
+            modalMoney: document.getElementById('modal-money'),
+            purchaseItems: document.getElementById('purchase-items'),
+            cancelPurchase: document.getElementById('cancel-purchase'),
+            confirmPurchase: document.getElementById('confirm-purchase'),
+            categoryBtns: document.querySelectorAll('.category-btn'),
+            
+            // 定价模态框
+            pricingModal: document.getElementById('pricing-modal'),
+            pricingItems: document.getElementById('pricing-items'),
+            cancelPricing: document.getElementById('cancel-pricing'),
+            confirmPricing: document.getElementById('confirm-pricing'),
+            
+            // 促销模态框
+            promotionModal: document.getElementById('promotion-modal'),
+            promotionItems: document.getElementById('promotion-items'),
+            cancelPromotion: document.getElementById('cancel-promotion'),
+            confirmPromotion: document.getElementById('confirm-promotion'),
+            promotionOptions: document.querySelectorAll('.promotion-option'),
+            
+            // 升级模态框
+            upgradeModal: document.getElementById('upgrade-modal'),
+            upgradeItems: document.getElementById('upgrade-items'),
+            cancelUpgrade: document.getElementById('cancel-upgrade'),
+            confirmUpgrade: document.getElementById('confirm-upgrade'),
+            upgradeOptions: document.querySelectorAll('.upgrade-option'),
+            
+            // 结果模态框
+            resultModal: document.getElementById('result-modal'),
+            resultDetails: document.getElementById('result-details'),
+            closeResult: document.getElementById('close-result'),
+            
+            // 事件模态框
+            eventModal: document.getElementById('event-modal'),
+            eventDetails: document.getElementById('event-details'),
+            eventChoices: document.getElementById('event-choices'),
+            closeEvent: document.getElementById('close-event'),
+            eventConfirmChoice: document.getElementById('event-confirm-choice')
+        };
+
+        // 当前选择的选项（促销、升级、事件选择）
+        let selectedOption = null;
+
+        // 初始化游戏
+        function initGame() {
+            // 初始化价格为建议价格
+            for (const key in gameData.products) {
+                gameData.prices[key] = gameData.products[key].basePrice;
+            }
+            
+            // 更新UI
+            updateGameUI();
+            
+            // 绑定事件
+            bindEvents();
+        }
+
+        // 更新游戏UI
+        function updateGameUI() {
+            // 更新状态显示
+            elements.money.textContent = `¥${gameData.money}`;
+            elements.day.textContent = gameData.day;
+            elements.reputation.textContent = gameData.reputation;
+            elements.season.textContent = gameData.season;
+            
+            // 更新库存显示
+            updateInventoryDisplay();
+            
+            // 更新状态文本
+            updateStatusText();
+            
+            // 更新特殊信息
+            updateSpecialInfo();
+        }
+
+        // 更新库存显示
+        function updateInventoryDisplay() {
+            elements.inventory.innerHTML = '';
+            
+            let hasItems = false;
+            
+            for (const key in gameData.inventory) {
+                if (gameData.inventory[key] > 0) {
+                    hasItems = true;
+                    const product = gameData.products[key];
+                    const item = document.createElement('div');
+                    item.className = 'flex justify-between items-center p-2 border-b border-gray-100';
+                    
+                    // 标记季节性商品
+                    let seasonalBadge = '';
+                    if (product.category === 'seasonal') {
+                        seasonalBadge = '<span class="text-xs bg-purple-100 text-purple-800 px-1 rounded ml-2">季节</span>';
+                    }
+                    
+                    item.innerHTML = `
+                        <span>${product.name}${seasonalBadge}</span>
+                        <div class="flex items-center gap-4">
+                            <span>库存: ${gameData.inventory[key]}</span>
+                            <span class="font-bold text-accent">¥${gameData.prices[key]}</span>
+                        </div>
+                    `;
+                    elements.inventory.appendChild(item);
+                }
+            }
+            
+            if (!hasItems) {
+                elements.inventory.innerHTML = '<div class="text-gray-500 italic">尚未采购任何商品</div>';
+            }
+        }
+
+        // 更新状态文本
+        function updateStatusText() {
+            let status = '';
+            
+            if (gameData.day === 1) {
+                status = '欢迎来到你的街角小店！今天是你开业的第一天。你有¥1000启动资金，声誉50。请开始采购商品，准备迎接顾客吧！';
+            } else {
+                status = `今天是开业的第${gameData.day}天，${gameData.season}。你的小店目前声誉是${gameData.reputation}，资金¥${gameData.money}。`;
+                
+                // 检查是否有库存
+                let hasInventory = false;
+                for (const key in gameData.inventory) {
+                    if (gameData.inventory[key] > 0) {
+                        hasInventory = true;
+                        break;
+                    }
+                }
+                
+                if (!hasInventory) {
+                    status += ' 你的库存已经空了，请尽快采购商品！';
+                }
+                
+                // 显示当前促销活动
+                if (gameData.currentPromotion) {
+                    const promoText = {
+                        discount: '全场8折促销活动正在进行中',
+                        buyone: '买一送一促销活动正在进行中',
+                        freegift: '满额赠礼促销活动正在进行中'
+                    };
+                    status += ` ${promoText[gameData.currentPromotion]}。`;
+                }
+            }
+            
+            elements.statusText.textContent = status;
+        }
+
+        // 更新特殊信息
+        function updateSpecialInfo() {
+            let info = [];
+            
+            // 检查是否有即将到来的节日
+            const holidays = {
+                15: "注意：情人节即将到来，巧克力需求会增加！",
+                45: "注意：清明节期间，部分日用品需求会上升！",
+                120: "注意：端午节快到了，相关食品需求会激增！",
+                180: "注意：暑假开始了，季节性商品需求会变化！",
+                250: "注意：国庆节期间，游客增多，整体需求上升！",
+                350: "注意：圣诞节快到了，节日相关商品需求增加！",
+                360: "注意：新年将至，各类商品需求都会上升！"
+            };
+            
+            for (const day in holidays) {
+                if (gameData.day >= parseInt(day) - 3 && gameData.day <= parseInt(day)) {
+                    info.push(`• ${holidays[day]}`);
+                }
+            }
+            
+            // 检查是否有促销活动
+            if (gameData.currentPromotion) {
+                info.push(`• 当前有促销活动，顾客会比平时多30%`);
+            }
+            
+            // 检查季节适应性
+            const seasonalTips = {
+                "春季": "• 春季多雨，雨伞可能会有不错的销量",
+                "夏季": "• 夏季炎热，风扇和冷饮需求增加",
+                "秋季": "• 秋季转凉，围巾等保暖用品开始热销",
+                "冬季": "• 冬季寒冷，取暖设备和保暖用品需求旺盛"
+            };
+            
+            info.push(seasonalTips[gameData.season]);
+            
+            // 显示店铺等级信息
+            info.push(`• 店铺等级：货架${gameData.upgrades.shelves}级 | 服务${gameData.upgrades.service}级 | 宣传${gameData.upgrades.advertise}级`);
+            
+            elements.specialInfo.innerHTML = info.join('<br>');
+        }
+
+        // 添加日志条目
+        function addLogEntry(text, isImportant = false, eventType = '') {
+            const entry = document.createElement('div');
+            let className = 'log-entry';
+            if (isImportant) className += ' font-bold';
+            if (eventType) className += ` event-${eventType}`;
+            
+            entry.className = className;
+            entry.textContent = text;
+            elements.logContainer.appendChild(entry);
+            elements.logContainer.scrollTop = elements.logContainer.scrollHeight;
+        }
+
+        // 显示采购模态框
+        function showPurchaseModal() {
+            elements.purchaseItems.innerHTML = '';
+            elements.modalMoney.textContent = `¥${gameData.money}`;
+            
+            // 生成所有商品采购项
+            for (const key in gameData.products) {
+                const product = gameData.products[key];
+                const item = document.createElement('div');
+                item.className = `purchase-item flex flex-col ${product.category}`;
+                
+                // 标记季节性商品
+                let seasonalBadge = '';
+                if (product.category === 'seasonal') {
+                    // 检查是否是当季商品
+                    const isInSeason = product.seasons && product.seasons.includes(gameData.season);
+                    seasonalBadge = `<span class="text-xs ${isInSeason ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'} px-1 rounded ml-2">${isInSeason ? '当季' : '非当季'}</span>`;
+                }
+                
+                item.innerHTML = `
+                    <div class="flex justify-between mb-1">
+                        <span>${product.name}${seasonalBadge}</span>
+                        <span class="text-gray-600">进货价: ¥${product.cost}</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button class="decrease-qty px-2 py-1 bg-gray-200 rounded" data-product="${key}">-</button>
+                        <input type="number" min="0" value="0" class="qty-input w-16 text-center border rounded" data-product="${key}">
+                        <button class="increase-qty px-2 py-1 bg-gray-200 rounded" data-product="${key}">+</button>
+                        <span class="ml-auto text-gray-500">小计: ¥<span class="subtotal">0</span></span>
+                    </div>
+                `;
+                elements.purchaseItems.appendChild(item);
+            }
+            
+            // 绑定数量调整事件
+            document.querySelectorAll('.decrease-qty').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const productKey = this.getAttribute('data-product');
+                    const input = document.querySelector(`.qty-input[data-product="${productKey}"]`);
+                    input.value = Math.max(0, parseInt(input.value) - 1);
+                    updatePurchaseSubtotals();
+                });
+            });
+            
+            document.querySelectorAll('.increase-qty').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const productKey = this.getAttribute('data-product');
+                    const input = document.querySelector(`.qty-input[data-product="${productKey}"]`);
+                    // 检查是否有足够的钱购买更多
+                    const product = gameData.products[productKey];
+                    const currentQty = parseInt(input.value);
+                    // 考虑货架等级对最大采购量的影响
+                    const maxPossible = Math.floor(gameData.money / product.cost) * gameData.upgrades.shelves;
+                    
+                    if (currentQty < maxPossible) {
+                        input.value = currentQty + 1;
+                        updatePurchaseSubtotals();
+                    }
+                });
+            });
+            
+            document.querySelectorAll('.qty-input').forEach(input => {
+                input.addEventListener('change', function() {
+                    const productKey = this.getAttribute('data-product');
+                    const product = gameData.products[productKey];
+                    let value = parseInt(this.value) || 0;
+                    value = Math.max(0, value);
+                    
+                    // 确保不会超过可购买数量，考虑货架等级
+                    const maxPossible = Math.floor(gameData.money / product.cost) * gameData.upgrades.shelves;
+                    value = Math.min(value, maxPossible);
+                    
+                    this.value = value;
+                    updatePurchaseSubtotals();
+                });
+            });
+            
+            // 绑定分类筛选事件
+            elements.categoryBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    // 移除所有按钮的活跃状态
+                    elements.categoryBtns.forEach(b => {
+                        b.classList.remove('bg-primary', 'text-white');
+                        b.classList.add('bg-gray-200', 'hover:bg-gray-300');
+                    });
+                    
+                    // 添加当前按钮的活跃状态
+                    this.classList.remove('bg-gray-200', 'hover:bg-gray-300');
+                    this.classList.add('bg-primary', 'text-white');
+                    
+                    const category = this.getAttribute('data-category');
+                    
+                    // 筛选显示的商品
+                    document.querySelectorAll('.purchase-item').forEach(item => {
+                        if (category === 'all' || item.classList.contains(category)) {
+                            item.style.display = 'flex';
+                        } else {
+                            item.style.display = 'none';
+                        }
+                    });
+                });
+            });
+            
+            elements.purchaseModal.classList.remove('hidden');
+        }
+
+        // 更新采购小计
+        function updatePurchaseSubtotals() {
+            let total = 0;
+            
+            document.querySelectorAll('.qty-input').forEach(input => {
+                const productKey = input.getAttribute('data-product');
+                const product = gameData.products[productKey];
+                const qty = parseInt(input.value) || 0;
+                const subtotal = qty * product.cost;
+                
+                input.parentElement.querySelector('.subtotal').textContent = subtotal;
+                total += subtotal;
+            });
+            
+            // 添加总计
+            let totalElement = document.getElementById('purchase-total');
+            if (!totalElement) {
+                totalElement = document.createElement('div');
+                totalElement.id = 'purchase-total';
+                totalElement.className = 'mt-4 pt-3 border-t border-gray-200';
+                elements.purchaseItems.appendChild(totalElement);
+            }
+            
+            totalElement.innerHTML = `<div class="flex justify-between font-bold">
+                <span>总计:</span>
+                <span class="text-primary">¥${total}</span>
+            </div>`;
+        }
+
+        // 确认采购
+        function confirmPurchase() {
+            let totalCost = 0;
+            let purchases = [];
+            
+            document.querySelectorAll('.qty-input').forEach(input => {
+                const productKey = input.getAttribute('data-product');
+                const qty = parseInt(input.value) || 0;
+                
+                if (qty > 0) {
+                    const product = gameData.products[productKey];
+                    const cost = qty * product.cost;
+                    totalCost += cost;
+                    purchases.push({ key: productKey, qty, product });
+                }
+            });
+            
+            if (purchases.length === 0) {
+                alert('请选择要采购的商品');
+                return;
+            }
+            
+            if (totalCost > gameData.money) {
+                alert('资金不足，无法完成采购');
+                return;
+            }
+            
+            // 执行采购
+            gameData.money -= totalCost;
+            
+            purchases.forEach(item => {
+                if (!gameData.inventory[item.key]) {
+                    gameData.inventory[item.key] = 0;
+                }
+                gameData.inventory[item.key] += item.qty;
+                addLogEntry(`采购了 ${item.qty} 个 ${item.product.name}，花费 ¥${item.qty * item.product.cost}`);
+            });
+            
+            // 关闭模态框并更新UI
+            elements.purchaseModal.classList.add('hidden');
+            updateGameUI();
+        }
+
+        // 显示定价模态框
+        function showPricingModal() {
+            elements.pricingItems.innerHTML = '';
+            
+            let hasItems = false;
+            
+            for (const key in gameData.inventory) {
+                if (gameData.inventory[key] > 0) {
+                    hasItems = true;
+                    const product = gameData.products[key];
+                    const item = document.createElement('div');
+                    item.className = 'flex flex-col';
+                    
+                    // 计算建议价格范围
+                    const minSuggested = Math.max(product.cost, Math.floor(product.basePrice * 0.8));
+                    const maxSuggested = Math.floor(product.basePrice * 1.5);
+                    
+                    item.innerHTML = `
+                        <div class="flex justify-between mb-1">
+                            <span>${product.name}</span>
+                            <span class="text-gray-600">进货价: ¥${product.cost}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span>售价:</span>
+                            <input type="number" min="${product.cost}" 
+                                   value="${gameData.prices[key] || product.basePrice}" 
+                                   class="price-input w-20 text-center border rounded" 
+                                   data-product="${key}">
+                            <span class="ml-auto text-gray-500">建议: ¥${minSuggested}-${maxSuggested}</span>
+                        </div>
+                    `;
+                    elements.pricingItems.appendChild(item);
+                }
+            }
+            
+            if (!hasItems) {
+                elements.pricingItems.innerHTML = '<div class="text-gray-500 italic">没有可设置价格的商品，请先采购</div>';
+            }
+            
+            elements.pricingModal.classList.remove('hidden');
+        }
+
+        // 确认价格设置
+        function confirmPricing() {
+            let hasChanges = false;
+            
+            document.querySelectorAll('.price-input').forEach(input => {
+                const productKey = input.getAttribute('data-product');
+                const product = gameData.products[productKey];
+                const newPrice = parseInt(input.value) || product.basePrice;
+                
+                // 确保售价不低于成本
+                const finalPrice = Math.max(product.cost, newPrice);
+                
+                if (gameData.prices[productKey] !== finalPrice) {
+                    gameData.prices[productKey] = finalPrice;
+                    hasChanges = true;
+                    addLogEntry(`${product.name}的售价调整为 ¥${finalPrice}`);
+                }
+            });
+            
+            if (hasChanges) {
+                addLogEntry('价格设置已更新');
+            }
+            
+            // 关闭模态框并更新UI
+            elements.pricingModal.classList.add('hidden');
+            updateGameUI();
+        }
+
+        // 显示促销模态框
+        function showPromotionModal() {
+            selectedOption = null;
+            elements.confirmPromotion.disabled = true;
+            
+            // 重置选项样式
+            elements.promotionOptions.forEach(option => {
+                option.classList.remove('border-purple-500', 'bg-purple-50');
+                option.classList.add('border-gray-200');
+            });
+            
+            // 绑定选项点击事件
+            elements.promotionOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    // 重置其他选项样式
+                    elements.promotionOptions.forEach(opt => {
+                        opt.classList.remove('border-purple-500', 'bg-purple-50');
+                        opt.classList.add('border-gray-200');
+                    });
+                    
+                    // 设置当前选项样式
+                    this.classList.remove('border-gray-200');
+                    this.classList.add('border-purple-500', 'bg-purple-50');
+                    
+                    // 记录选择
+                    selectedOption = this;
+                    elements.confirmPromotion.disabled = false;
+                });
+            });
+            
+            elements.promotionModal.classList.remove('hidden');
+        }
+
+        // 确认促销活动
+        function confirmPromotion() {
+            if (!selectedOption) return;
+            
+            const promotionType = selectedOption.getAttribute('data-type');
+            const promotionCost = parseInt(selectedOption.getAttribute('data-cost'));
+            
+            if (gameData.money < promotionCost) {
+                alert('资金不足，无法举办促销活动');
+                return;
+            }
+            
+            // 扣除费用并设置促销活动
+            gameData.money -= promotionCost;
+            gameData.currentPromotion = promotionType;
+            
+            const promotionNames = {
+                discount: '全场折扣',
+                buyone: '买一送一',
+                freegift: '满额赠礼'
+            };
+            
+            addLogEntry(`成功举办了${promotionNames[promotionType]}活动，花费¥${promotionCost}`, true);
+            
+            // 关闭模态框并更新UI
+            elements.promotionModal.classList.add('hidden');
+            updateGameUI();
+        }
+
+        // 显示升级模态框
+        function showUpgradeModal() {
+            selectedOption = null;
+            elements.confirmUpgrade.disabled = true;
+            
+            // 更新升级选项信息
+            document.querySelectorAll('.upgrade-option').forEach(option => {
+                const type = option.getAttribute('data-type');
+                const currentLevel = gameData.upgrades[type];
+                // 升级费用随等级增加
+                const cost = parseInt(option.getAttribute('data-cost')) * currentLevel;
+                
+                option.setAttribute('data-cost', cost);
+                option.querySelector('.text-teal-600').textContent = `费用: ¥${cost} | 当前等级: ${currentLevel}`;
+                
+                // 重置样式
+                option.classList.remove('border-teal-500', 'bg-teal-50');
+                option.classList.add('border-gray-200');
+            });
+            
+            // 绑定选项点击事件
+            document.querySelectorAll('.upgrade-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    // 重置其他选项样式
+                    document.querySelectorAll('.upgrade-option').forEach(opt => {
+                        opt.classList.remove('border-teal-500', 'bg-teal-50');
+                        opt.classList.add('border-gray-200');
+                    });
+                    
+                    // 设置当前选项样式
+                    this.classList.remove('border-gray-200');
+                    this.classList.add('border-teal-500', 'bg-teal-50');
+                    
+                    // 记录选择
+                    selectedOption = this;
+                    elements.confirmUpgrade.disabled = false;
+                });
+            });
+            
+            elements.upgradeModal.classList.remove('hidden');
+        }
+
+        // 确认店铺升级
+        function confirmUpgrade() {
+            if (!selectedOption) return;
+            
+            const upgradeType = selectedOption.getAttribute('data-type');
+            const upgradeCost = parseInt(selectedOption.getAttribute('data-cost'));
+            
+            if (gameData.money < upgradeCost) {
+                alert('资金不足，无法进行升级');
+                return;
+            }
+            
+            // 扣除费用并升级
+            gameData.money -= upgradeCost;
+            gameData.upgrades[upgradeType] += 1;
+            
+            const upgradeNames = {
+                shelves: '扩展货架',
+                service: '提升服务',
+                advertise: '广告宣传'
+            };
+            
+            const upgradeEffects = {
+                shelves: '库存容量增加了！',
+                service: '顾客满意度提高，声誉增长加快！',
+                advertise: '店铺知名度提升，顾客数量增加！'
+            };
+            
+            addLogEntry(`成功完成了${upgradeNames[upgradeType]}升级（等级${gameData.upgrades[upgradeType]}），花费¥${upgradeCost}`, true);
+            addLogEntry(upgradeEffects[upgradeType], true);
+            
+            // 关闭模态框并更新UI
+            elements.upgradeModal.classList.add('hidden');
+            updateGameUI();
+        }
+
+        // 开门营业
+        function openShop() {
+            // 检查是否有库存
+            let hasInventory = false;
+            for (const key in gameData.inventory) {
+                if (gameData.inventory[key] > 0) {
+                    hasInventory = true;
+                    break;
+                }
+            }
+            
+            if (!hasInventory) {
+                alert('你的库存为空，无法营业，请先采购商品');
+                return;
+            }
+            
+            // 计算基础顾客数量（基于声誉和广告等级）
+            let baseCustomers = Math.floor(10 + (gameData.reputation / 10) * 5 + (gameData.upgrades.advertise - 1) * 10);
+            
+            // 考虑促销活动影响
+            if (gameData.currentPromotion) {
+                baseCustomers = Math.floor(baseCustomers * 1.3);
+            }
+            
+            // 考虑星期因素（周末顾客更多）
+            const dayOfWeek = (gameData.day - 1) % 7;
+            if (dayOfWeek === 5 || dayOfWeek === 6) { // 周六或周日
+                baseCustomers = Math.floor(baseCustomers * 1.2);
+                addLogEntry('今天是周末，顾客比平时多20%', true);
+            }
+            
+            // 添加随机波动
+            const customerCount = Math.floor(baseCustomers + (Math.random() * 10 - 5));
+            addLogEntry(`今天有 ${customerCount} 位顾客光临`, true);
+            
+            let totalRevenue = 0;
+            let totalCost = 0;
+            let sales = {};
+            
+            // 模拟每位顾客的购买行为
+            for (let i = 0; i < customerCount; i++) {
+                // 随机选择一个有库存的商品
+                const availableProducts = [];
+                for (const key in gameData.inventory) {
+                    if (gameData.inventory[key] > 0) {
+                        // 增加当季商品被选中的概率
+                        const product = gameData.products[key];
+                        const weight = product.category === 'seasonal' && product.seasons && product.seasons.includes(gameData.season) ? 3 : 1;
+                        
+                        // 添加多次以增加权重
+                        for (let j = 0; j < weight; j++) {
+                            availableProducts.push(key);
+                        }
+                    }
+                }
+                
+                if (availableProducts.length === 0) break;
+                
+                const randomIndex = Math.floor(Math.random() * availableProducts.length);
+                const productKey = availableProducts[randomIndex];
+                const product = gameData.products[productKey];
+                let price = gameData.prices[productKey];
+                
+                // 应用促销活动
+                let promotionText = '';
+                let actualPrice = price;
+                let actualQty = 1;
+                
+                if (gameData.currentPromotion === 'discount') {
+                    actualPrice = Math.floor(price * 0.8);
+                    promotionText = '（享受8折优惠）';
+                }
+                
+                // 购买数量（1-3个）
+                const qty = Math.floor(Math.random() * 3) + 1;
+                actualQty = Math.min(qty, gameData.inventory[productKey]);
+                
+                // 买一送一促销
+                if (gameData.currentPromotion === 'buyone' && Math.random() < 0.5) {
+                    const freeQty = Math.min(actualQty, gameData.inventory[productKey] - actualQty);
+                    if (freeQty > 0) {
+                        actualQty += freeQty;
+                        promotionText = `（买${qty}送${freeQty}）`;
+                    }
+                }
+                
+                // 计算购买概率（基于价格和声誉）
+                const priceRatio = actualPrice / product.basePrice; // 价格与建议价格的比率
+                let purchaseProbability = 0.7; // 基础概率
+                
+                // 价格越高，购买概率越低
+                purchaseProbability -= (priceRatio - 1) * 0.5;
+                // 声誉越高，购买概率越高（受服务等级影响）
+                purchaseProbability += (gameData.reputation - 50) / 100 * 0.3 * gameData.upgrades.service;
+                
+                // 确保概率在0.1到0.95之间
+                purchaseProbability = Math.max(0.1, Math.min(0.95, purchaseProbability));
+                
+                // 随机决定是否购买
+                if (Math.random() <= purchaseProbability) {
+                    // 记录销售
+                    if (!sales[productKey]) {
+                        sales[productKey] = { qty: 0, revenue: 0 };
+                    }
+                    sales[productKey].qty += actualQty;
+                    sales[productKey].revenue += qty * actualPrice; // 买一送一的赠品不算收入
+                    
+                    // 更新库存和收入
+                    gameData.inventory[productKey] -= actualQty;
+                    totalRevenue += qty * actualPrice;
+                    totalCost += actualQty * product.cost;
+                    
+                    addLogEntry(`一位顾客购买了 ${actualQty} 个 ${product.name}${promotionText}，收入 ¥${qty * actualPrice}`);
+                } else {
+                    addLogEntry(`一位顾客觉得 ${product.name} 价格不合适，没有购买`);
+                }
+            }
+            
+            // 满额赠礼促销效果
+            if (gameData.currentPromotion === 'freegift' && totalRevenue >= 200) {
+                const giftCost = 30;
+                totalCost += giftCost;
+                addLogEntry('多位顾客满足满额赠礼条件，赠送了小礼品', true);
+            }
+            
+            // 计算利润
+            const profit = totalRevenue - totalCost;
+            
+            // 更新声誉（基于定价合理性和服务等级）
+            let priceFairness = 0;
+            let productCount = 0;
+            
+            for (const key in gameData.prices) {
+                if (gameData.inventory[key] > 0 || (sales[key] && sales[key].qty > 0)) {
+                    const priceRatio = gameData.prices[key] / gameData.products[key].basePrice;
+                    // 价格越接近建议价格，公平性越高
+                    priceFairness += 1 - Math.abs(1 - priceRatio);
+                    productCount++;
+                }
+            }
+            
+            if (productCount > 0) {
+                priceFairness = priceFairness / productCount;
+                
+                // 根据公平性调整声誉，受服务等级影响
+                const reputationChange = Math.floor((priceFairness - 0.5) * 10 * gameData.upgrades.service);
+                gameData.reputation = Math.max(1, Math.min(100, gameData.reputation + reputationChange));
+                
+                if (reputationChange !== 0) {
+                    addLogEntry(`由于定价${reputationChange > 0 ? '合理' : '不合理'}，声誉${reputationChange > 0 ? '增加' : '减少'}了 ${Math.abs(reputationChange)}`, true);
+                }
+            }
+            
+            // 更新资金
+            gameData.money += totalRevenue;
+            
+            // 促销活动结束
+            gameData.currentPromotion = null;
+            
+            // 显示营业结果
+            showBusinessResult(customerCount, totalRevenue, totalCost, profit, sales);
+            
+            // 更新UI
+            updateGameUI();
+        }
+
+        // 显示营业结果
+        function showBusinessResult(customerCount, revenue, cost, profit, sales) {
+            elements.resultDetails.innerHTML = `
+                <div class="flex justify-between py-1 border-b border-gray-100">
+                    <span>顾客数量:</span>
+                    <span>${customerCount}</span>
+                </div>
+                <div class="flex justify-between py-1 border-b border-gray-100">
+                    <span>总收入:</span>
+                    <span class="text-green-600">¥${revenue}</span>
+                </div>
+                <div class="flex justify-between py-1 border-b border-gray-100">
+                    <span>商品成本:</span>
+                    <span class="text-red-600">¥${cost}</span>
+                </div>
+                <div class="flex justify-between py-1 border-b border-gray-100 font-bold">
+                    <span>今日利润:</span>
+                    <span class="${profit >= 0 ? 'text-green-600' : 'text-red-600'}">¥${profit}</span>
+                </div>
+                <div class="mt-4">
+                    <h4 class="font-bold mb-2">销售详情:</h4>
+                    <div class="space-y-1 max-h-40 overflow-y-auto">
+                        ${Object.keys(sales).length > 0 ? Object.keys(sales).map(key => {
+                            const product = gameData.products[key];
+                            const sale = sales[key];
+                            const profitPerItem = Math.round((sale.revenue / sale.qty - product.cost) * 100) / 100;
+                            return `
+                                <div class="flex justify-between text-sm">
+                                    <span>${product.name} (${sale.qty}个):</span>
+                                    <span>¥${sale.revenue} (每个赚¥${profitPerItem})</span>
+                                </div>
+                            `;
+                        }).join('') : '<div class="text-gray-500 italic">今天没有销售记录</div>'}
+                    </div>
+                </div>
+            `;
+            
+            elements.resultModal.classList.remove('hidden');
+        }
+
+        // 显示特殊事件
+        function showSpecialEvent(event) {
+            elements.eventDetails.innerHTML = `<p>${event.text}</p>`;
+            elements.eventChoices.classList.add('hidden');
+            elements.eventConfirmChoice.classList.add('hidden');
+            elements.closeEvent.classList.remove('hidden');
+            
+            // 如果事件有选择项
+            if (event.choices) {
+                elements.eventChoices.innerHTML = '';
+                elements.eventChoices.classList.remove('hidden');
+                elements.eventConfirmChoice.classList.remove('hidden');
+                elements.closeEvent.classList.add('hidden');
+                
+                event.choices.forEach((choice, index) => {
+                    const choiceElement = document.createElement('div');
+                    choiceElement.className = 'border border-gray-200 rounded-lg p-3 hover:bg-gray-50 cursor-pointer';
+                    choiceElement.textContent = choice.text;
+                    choiceElement.setAttribute('data-choice-index', index);
+                    
+                    choiceElement.addEventListener('click', function() {
+                        // 重置其他选项样式
+                        document.querySelectorAll('#event-choices > div').forEach(el => {
+                            el.classList.remove('border-primary', 'bg-primary/5');
+                        });
+                        
+                        // 设置当前选项样式
+                        this.classList.add('border-primary', 'bg-primary/5');
+                        selectedOption = index;
+                    });
+                    
+                    elements.eventChoices.appendChild(choiceElement);
+                });
+            }
+            
+            // 存储事件数据
+            elements.eventModal.setAttribute('data-event', JSON.stringify(event));
+            
+            elements.eventModal.classList.remove('hidden');
+        }
+
+        // 处理事件选择
+        function handleEventChoice() {
+            if (selectedOption === null) return;
+            
+            const eventData = JSON.parse(elements.eventModal.getAttribute('data-event'));
+            const chosenOption = eventData.choices[selectedOption];
+            
+            // 应用选择的结果
+            if (chosenOption.effect) {
+                if (chosenOption.effect.money) {
+                    gameData.money += chosenOption.effect.money;
+                    addLogEntry(`事件结果：${chosenOption.resultText}，${chosenOption.effect.money >= 0 ? '获得' : '损失'}了¥${Math.abs(chosenOption.effect.money)}`, true, chosenOption.effect.money >= 0 ? 'positive' : 'negative');
+                }
+                
+                if (chosenOption.effect.reputation) {
+                    gameData.reputation = Math.max(1, Math.min(100, gameData.reputation + chosenOption.effect.reputation));
+                    addLogEntry(`事件结果：${chosenOption.resultText}，声誉${chosenOption.effect.reputation >= 0 ? '增加' : '减少'}了${Math.abs(chosenOption.effect.reputation)}`, true, chosenOption.effect.reputation >= 0 ? 'positive' : 'negative');
+                }
+                
+                if (chosenOption.effect.inventory) {
+                    const { product, qty } = chosenOption.effect.inventory;
+                    if (!gameData.inventory[product]) {
+                        gameData.inventory[product] = 0;
+                    }
+                    gameData.inventory[product] += qty;
+                    addLogEntry(`事件结果：${chosenOption.resultText}，${qty >= 0 ? '获得' : '损失'}了${Math.abs(qty)}个${gameData.products[product].name}`, true, qty >= 0 ? 'positive' : 'negative');
+                }
+            } else {
+                addLogEntry(`事件结果：${chosenOption.resultText}`, true, 'special');
+            }
+            
+            // 关闭事件模态框
+            elements.eventModal.classList.add('hidden');
+            updateGameUI();
+        }
+
+        // 结束今天，进入下一天
+        function nextDay() {
+            // 检查是否已经营业
+            let hasSold = false;
+            for (const key in gameData.inventory) {
+                // 假设初始库存为0，如果当前库存小于曾经有过的库存，说明卖过东西
+                if (gameData.inventory[key] < (gameData.lastInventory ? gameData.lastInventory[key] || 0 : 0)) {
+                    hasSold = true;
+                    break;
+                }
+            }
+            
+            // 如果没有营业，提醒玩家
+            if (!hasSold && gameData.day > 1) {
+                if (!confirm('你今天还没有营业，确定要结束今天吗？')) {
+                    return;
+                }
+            }
+            
+            // 保存当前库存以便明天比较
+            gameData.lastInventory = { ...gameData.inventory };
+            
+            // 季节变化（每30天一个季节）
+            const seasons = ["春季", "夏季", "秋季", "冬季"];
+            gameData.season = seasons[Math.floor((gameData.day % 120) / 30)];
+            
+            // 随机事件概率随天数增加
+            const randomEventChance = Math.min(0.5, 0.3 + (gameData.day / 100) * 0.2);
+            
+            if (Math.random() < randomEventChance) {
+                // 普通随机事件
+                const events = [
+                    { 
+                        type: 'positive', 
+                        text: '一位常客非常满意你的服务，推荐了新顾客，声誉+5',
+                        effect: { reputation: 5 }
+                    },
+                    { 
+                        type: 'positive', 
+                        text: '供应商提供了折扣，今天采购成本降低10%',
+                        effect: 'discount'
+                    },
+                    { 
+                        type: 'positive', 
+                        text: '一位供应商朋友送来了一些样品，获得了免费商品',
+                        effect: { inventory: { product: Object.keys(gameData.products)[Math.floor(Math.random() * Object.keys(gameData.products).length)], qty: Math.floor(Math.random() * 5) + 1 } }
+                    },
+                    { 
+                        type: 'negative', 
+                        text: '部分商品轻微损坏，库存减少',
+                        effect: 'inventoryLoss'
+                    },
+                    { 
+                        type: 'negative', 
+                        text: '附近新开了一家店，竞争加剧，明天顾客可能减少',
+                        effect: 'competition'
+                    },
+                    { 
+                        type: 'negative', 
+                        text: '晚上遭遇小偷，损失了一些现金',
+                        effect: { money: -Math.floor(Math.random() * 100) - 50 }
+                    },
+                    { 
+                        type: 'neutral', 
+                        text: '天气预报明天会下雨，可能影响顾客数量',
+                        effect: 'rain'
+                    },
+                    { 
+                        type: 'neutral', 
+                        text: '收到一份市场调查报告，了解到明天某种商品需求会增加',
+                        effect: 'demandIncrease'
+                    }
+                ];
+                
+                const randomEvent = events[Math.floor(Math.random() * events.length)];
+                addLogEntry(`【随机事件】${randomEvent.text}`, true, randomEvent.type);
+                
+                // 应用事件效果
+                if (randomEvent.effect) {
+                    if (randomEvent.effect.reputation) {
+                        gameData.reputation = Math.max(1, Math.min(100, gameData.reputation + randomEvent.effect.reputation));
+                    }
+                    
+                    if (randomEvent.effect.money) {
+                        gameData.money = Math.max(0, gameData.money + randomEvent.effect.money);
+                    }
+                    
+                    if (randomEvent.effect.inventory) {
+                        const { product, qty } = randomEvent.effect.inventory;
+                        if (!gameData.inventory[product]) {
+                            gameData.inventory[product] = 0;
+                        }
+                        gameData.inventory[product] = Math.max(0, gameData.inventory[product] + qty);
+                    }
+                    
+                    if (randomEvent.effect === 'inventoryLoss') {
+                        // 随机减少一种商品的库存
+                        const productsWithInventory = [];
+                        for (const key in gameData.inventory) {
+                            if (gameData.inventory[key] > 0) {
+                                productsWithInventory.push(key);
+                            }
+                        }
+                        
+                        if (productsWithInventory.length > 0) {
+                            const randomKey = productsWithInventory[Math.floor(Math.random() * productsWithInventory.length)];
+                            const loss = Math.floor(gameData.inventory[randomKey] * 0.2) + 1;
+                            gameData.inventory[randomKey] = Math.max(0, gameData.inventory[randomKey] - loss);
+                            addLogEntry(`${gameData.products[randomKey].name} 损失了 ${loss} 个`);
+                        }
+                    }
+                }
+            }
+            
+            // 低概率发生特殊事件（有选择的事件）
+            if (Math.random() < 0.1) {
+                const specialEvents = [
+                    {
+                        text: '一位供应商向你推荐了一批特价商品，但数量较大，你需要决定是否购买',
+                        choices: [
+                            {
+                                text: '全部买下（价格低廉但需要较多资金）',
+                                resultText: '你购买了全部特价商品',
+                                effect: { 
+                                    money: -300,
+                                    inventory: { 
+                                        product: Object.keys(gameData.products).find(k => gameData.products[k].category === 'food') || 'apple', 
+                                        qty: 50 
+                                    }
+                                }
+                            },
+                            {
+                                text: '只买一部分（安全但价格稍高）',
+                                resultText: '你购买了部分特价商品',
+                                effect: { 
+                                    money: -100,
+                                    inventory: { 
+                                        product: Object.keys(gameData.products).find(k => gameData.products[k].category === 'food') || 'apple', 
+                                        qty: 10 
+                                    }
+                                }
+                            },
+                            {
+                                text: '不买（避免风险）',
+                                resultText: '你决定不购买特价商品',
+                                effect: {}
+                            }
+                        ]
+                    },
+                    {
+                        text: '一位顾客抱怨你的商品有质量问题，要求赔偿，你会如何处理？',
+                        choices: [
+                            {
+                                text: '全额退款并道歉（损失资金但提高声誉）',
+                                resultText: '你全额退款并道歉，顾客非常满意',
+                                effect: { money: -50, reputation: 10 }
+                            },
+                            {
+                                text: '部分退款（平衡损失和声誉）',
+                                resultText: '你给予了部分退款，顾客基本满意',
+                                effect: { money: -20, reputation: 3 }
+                            },
+                            {
+                                text: '拒绝退款（保住资金但损害声誉）',
+                                resultText: '你拒绝了退款，顾客非常不满并向他人抱怨',
+                                effect: { reputation: -10 }
+                            }
+                        ]
+                    },
+                    {
+                        text: '当地举办大型活动，可能会带来大量顾客，但需要提前备货，你会？',
+                        choices: [
+                            {
+                                text: '大量进货，准备迎接客流高峰',
+                                resultText: '你大量进货，准备充分',
+                                effect: { money: -500 }
+                            },
+                            {
+                                text: '适量增加库存，谨慎应对',
+                                resultText: '你适量增加了库存',
+                                effect: { money: -200 }
+                            },
+                            {
+                                text: '保持正常库存，不做特别准备',
+                                resultText: '你没有特别准备',
+                                effect: {}
+                            }
+                        ]
+                    }
+                ];
+                
+                const randomSpecialEvent = specialEvents[Math.floor(Math.random() * specialEvents.length)];
+                showSpecialEvent(randomSpecialEvent);
+            }
+            
+            // 增加天数
+            gameData.day++;
+            addLogEntry(`第${gameData.day}天开始了！`, true);
+            
+            // 更新UI
+            updateGameUI();
+        }
+
+        // 绑定事件处理函数
+        function bindEvents() {
+            // 按钮事件
+            elements.btnPurchase.addEventListener('click', showPurchaseModal);
+            elements.btnPricing.addEventListener('click', showPricingModal);
+            elements.btnOpen.addEventListener('click', openShop);
+            elements.btnPromotion.addEventListener('click', showPromotionModal);
+            elements.btnUpgrade.addEventListener('click', showUpgradeModal);
+            elements.btnNextDay.addEventListener('click', nextDay);
+            
+            // 采购模态框事件
+            elements.cancelPurchase.addEventListener('click', () => {
+                elements.purchaseModal.classList.add('hidden');
+            });
+            elements.confirmPurchase.addEventListener('click', confirmPurchase);
+            
+            // 定价模态框事件
+            elements.cancelPricing.addEventListener('click', () => {
+                elements.pricingModal.classList.add('hidden');
+            });
+            elements.confirmPricing.addEventListener('click', confirmPricing);
+            
+            // 促销模态框事件
+            elements.cancelPromotion.addEventListener('click', () => {
+                elements.promotionModal.classList.add('hidden');
+            });
+            elements.confirmPromotion.addEventListener('click', confirmPromotion);
+            
+            // 升级模态框事件
+            elements.cancelUpgrade.addEventListener('click', () => {
+                elements.upgradeModal.classList.add('hidden');
+            });
+            elements.confirmUpgrade.addEventListener('click', confirmUpgrade);
+            
+            // 结果模态框事件
+            elements.closeResult.addEventListener('click', () => {
+                elements.resultModal.classList.add('hidden');
+            });
+            
+            // 事件模态框事件
+            elements.closeEvent.addEventListener('click', () => {
+                elements.eventModal.classList.add('hidden');
+            });
+            elements.eventConfirmChoice.addEventListener('click', handleEventChoice);
+        }
+
+        // 启动游戏
+        window.addEventListener('DOMContentLoaded', initGame);
+    </script>
+</body>
+</html>
+    
