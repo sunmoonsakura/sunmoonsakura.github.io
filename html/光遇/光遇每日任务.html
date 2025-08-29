@@ -1,0 +1,216 @@
+<html lang="zh-CN"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>光遇每日任务</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#64748B',
+                        neutral: '#F1F5F9',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .text-shadow {
+                text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            .transition-custom {
+                transition: all 0.3s ease;
+            }
+            .visible-box {
+                opacity: 1 !important;
+                visibility: visible !important;
+                transform: translateY(0) !important;
+            }
+            .hidden-box {
+                display: none !important;
+                opacity: 0 !important;
+                visibility: hidden !important;
+            }
+            .readonly-bg {
+                background-color: #f9fafb;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-3xl">
+        <!-- 标题区域 -->
+        <div class="text-center mb-8">
+            <h1 class="text-[clamp(1.8rem,5vw,2.5rem)] font-bold text-gray-800 text-shadow">
+                <i class="fa fa-tasks mr-3 text-primary"></i>每日任务
+            </h1>
+            <div class="w-24 h-1 bg-primary mx-auto mt-2 rounded-full"></div>
+        </div>
+
+        <!-- 主要内容区域 -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-6 transform hover:shadow-xl transition-custom">
+            <!-- 读取按钮 -->
+            <div class="mb-6 text-center">
+                <button id="fetchBtn" class="bg-primary hover:bg-primary/90 text-white font-medium py-3 px-6 rounded-lg shadow transition-custom flex items-center justify-center mx-auto">
+                    <i class="fa fa-refresh mr-2"></i>刷新任务
+                </button>
+            </div>
+
+            <!-- 读取文本框 - 设置为不可见 -->
+            <div class="mb-8 hidden-box">
+                <label for="readContent" class="block text-gray-700 font-medium mb-2">读取内容:</label>
+                <textarea id="readContent" class="w-full h-32 p-4 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-custom resize-none" placeholder="点击上方按钮读取数据..."></textarea>
+            </div>
+
+            <!-- 四个任务文本框（垂直排列）- 确保可见且只读 -->
+            <div class="space-y-6 visible-box">
+                <div>
+                    <label class="block text-gray-700 font-medium mb-2">任务 1:</label>
+                    <textarea id="task1" class="w-full h-20 p-4 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-custom resize-none readonly-bg" placeholder="请手动刷新每日任务..." readonly></textarea>
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-medium mb-2">任务 2:</label>
+                    <textarea id="task2" class="w-full h-20 p-4 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-custom resize-none readonly-bg" placeholder="请手动刷新每日任务..." readonly></textarea>
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-medium mb-2">任务 3:</label>
+                    <textarea id="task3" class="w-full h-20 p-4 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-custom resize-none readonly-bg" placeholder="请手动刷新每日任务..." readonly></textarea>
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-medium mb-2">任务 4:</label>
+                    <textarea id="task4" class="w-full h-20 p-4 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-custom resize-none readonly-bg" placeholder="请手动刷新每日任务..." readonly></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- 状态提示 -->
+        <div id="statusMessage" class="hidden bg-neutral rounded-lg p-4 text-center text-gray-700"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const fetchBtn = document.getElementById('fetchBtn');
+            const readContent = document.getElementById('readContent');
+            const task1 = document.getElementById('task1');
+            const task2 = document.getElementById('task2');
+            const task3 = document.getElementById('task3');
+            const task4 = document.getElementById('task4');
+            const statusMessage = document.getElementById('statusMessage');
+            const apiUrl = 'https://api.t1qq.com/api/sky/gyrw?key=h7eYiD8RxzFdpTbIgG5rL2R2HL';
+
+            // 确保读取文本框不可见，任务文本框可见
+            readContent.style.display = 'none';
+            readContent.style.opacity = '0';
+            readContent.style.visibility = 'hidden';
+            
+            [task1, task2, task3, task4].forEach(el => {
+                el.style.display = 'block';
+                el.style.opacity = '1';
+                el.style.visibility = 'visible';
+                // 确保只读属性生效
+                el.readOnly = true;
+            });
+
+            // 显示状态消息
+            const showStatus = (message, isError = false) => {
+                statusMessage.textContent = message;
+                statusMessage.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'bg-red-100', 'text-red-800');
+                
+                if (isError) {
+                    statusMessage.classList.add('bg-red-100', 'text-red-800');
+                } else {
+                    statusMessage.classList.add('bg-green-100', 'text-green-800');
+                }
+
+                // 5秒后自动隐藏
+                setTimeout(() => {
+                    statusMessage.classList.add('hidden');
+                }, 5000);
+            };
+
+            // 处理API响应并填充文本框
+            const processResponse = (data) => {
+                // 仍然处理完整响应但不显示
+                readContent.value = JSON.stringify(data, null, 2);
+                
+                // 提取text后的中文内容
+                const tasks = [];
+                
+                if (data && data.data && data.data.list && Array.isArray(data.data.list)) {
+                    data.data.list.forEach(item => {
+                        if (item.text) {
+                            tasks.push(item.text);
+                        }
+                    });
+                } else {
+                    // 寻找所有包含text的属性
+                    try {
+                        const findTexts = (obj) => {
+                            if (typeof obj === 'object' && obj !== null) {
+                                for (const key in obj) {
+                                    if (key === 'text' && typeof obj[key] === 'string') {
+                                        tasks.push(obj[key]);
+                                    } else if (typeof obj[key] === 'object') {
+                                        findTexts(obj[key]);
+                                    }
+                                }
+                            }
+                        };
+                        findTexts(data);
+                    } catch (e) {
+                        console.error('提取text内容失败:', e);
+                    }
+                }
+
+                // 填充四个任务文本框
+                task1.value = tasks[0] || '无数据';
+                task2.value = tasks[1] || '无数据';
+                task3.value = tasks[2] || '无数据';
+                task4.value = tasks[3] || '无数据';
+            };
+
+            // 读取API数据
+            fetchBtn.addEventListener('click', async () => {
+                try {
+                    // 显示加载状态
+                    fetchBtn.disabled = true;
+                    fetchBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i>刷新中...';
+                    showStatus('正在刷新任务...');
+
+                    // 调用API
+                    const response = await fetch(apiUrl);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP错误: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    showStatus('任务刷新成功');
+                    processResponse(data);
+                    
+                } catch (error) {
+                    console.error('刷新任务失败:', error);
+                    showStatus(`刷新失败: ${error.message}`, true);
+                    readContent.value = `错误: 无法刷新任务 - ${error.message}`;
+                    [task1, task2, task3, task4].forEach(el => el.value = '');
+                } finally {
+                    // 恢复按钮状态
+                    fetchBtn.disabled = false;
+                    fetchBtn.innerHTML = '<i class="fa fa-refresh mr-2"></i>刷新任务';
+                }
+            });
+        });
+    </script>
+
+
+</body></html>
