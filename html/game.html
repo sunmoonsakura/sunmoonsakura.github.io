@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>囧囧的小店</title>
+    <title>街角小店 - 文字经营模拟游戏</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <script>
@@ -51,9 +51,17 @@
                 border-left: 3px solid #F59E0B;
                 padding-left: 5px;
             }
+            .save-indicator {
+                animation: pulse 1.5s infinite;
+            }
             @keyframes fadeIn {
                 from { opacity: 0; transform: translateY(10px); }
                 to { opacity: 1; transform: translateY(0); }
+            }
+            @keyframes pulse {
+                0% { opacity: 0.6; }
+                50% { opacity: 1; }
+                100% { opacity: 0.6; }
             }
         }
     </style>
@@ -61,9 +69,21 @@
 <body class="bg-gray-100 min-h-screen font-sans text-dark">
     <div class="container mx-auto px-4 py-8 flex flex-col items-center">
         <header class="w-full max-w-3xl mb-6 text-center">
-            <h1 class="text-[clamp(1.8rem,5vw,3rem)] font-bold text-primary mb-2 text-shadow">囧囧的小店</h1>
-            <p class="text-gray-600 text-lg">喵喵喵，喵喵喵。</p>
+            <h1 class="text-[clamp(1.8rem,5vw,3rem)] font-bold text-primary mb-2 text-shadow">街角小店</h1>
+            <p class="text-gray-600 text-lg">一个纯文字的小店经营模拟游戏</p>
         </header>
+
+        <!-- 存档提示 -->
+        <div id="save-notification" class="fixed top-4 right-4 bg-dark text-white px-4 py-2 rounded-md shadow-lg text-sm flex items-center hidden z-50">
+            <i class="fa fa-save mr-2"></i>
+            <span id="save-message">游戏已自动保存</span>
+        </div>
+
+        <!-- 加载存档提示 -->
+        <div id="load-notification" class="fixed top-4 left-4 bg-primary text-white px-4 py-2 rounded-md shadow-lg text-sm flex items-center hidden z-50">
+            <i class="fa fa-load mr-2 fa-refresh"></i>
+            <span>已加载保存的进度</span>
+        </div>
 
         <main class="game-container bg-white rounded-xl shadow-lg p-6 w-full">
             <!-- 游戏状态面板 -->
@@ -92,6 +112,19 @@
                         <span class="font-bold text-purple-600" id="season">春季</span>
                     </div>
                 </div>
+            </div>
+
+            <!-- 存档管理 -->
+            <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 mb-6 flex justify-end gap-3">
+                <button id="btn-new-game" class="px-3 py-1 bg-danger hover:bg-danger/90 text-white rounded-md transition text-sm flex items-center">
+                    <i class="fa fa-gamepad mr-1"></i> 新游戏
+                </button>
+                <button id="btn-manual-save" class="px-3 py-1 bg-primary hover:bg-primary/90 text-white rounded-md transition text-sm flex items-center">
+                    <i class="fa fa-floppy-o mr-1"></i> 手动存档
+                </button>
+                <button id="btn-clear-save" class="px-3 py-1 bg-gray-600 hover:bg-gray-700 text-white rounded-md transition text-sm flex items-center">
+                    <i class="fa fa-trash mr-1"></i> 清除存档
+                </button>
             </div>
 
             <!-- 游戏区域 -->
@@ -176,9 +209,9 @@
                             <i class="fa fa-lightbulb-o mr-2 text-amber-600"></i>经营提示
                         </h2>
                         <div id="tips" class="text-gray-700 text-sm space-y-2">
+                            <p>• 游戏会自动保存你的进度</p>
+                            <p>• 你也可以使用手动存档功能保存当前进度</p>
                             <p>• 周末顾客会比平时多20%</p>
-                            <p>• 节日期间特定商品需求会激增</p>
-                            <p>• 举办促销活动可以提高短期销量</p>
                         </div>
                     </div>
                 </div>
@@ -350,8 +383,28 @@
             </div>
         </div>
 
+        <!-- 模态框 - 确认操作 -->
+        <div id="confirm-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+            <div class="bg-white rounded-xl p-6 w-full max-w-md">
+                <h3 class="text-xl font-bold mb-4 flex items-center">
+                    <i class="fa fa-question-circle mr-2 text-danger"></i>确认操作
+                </h3>
+                <div id="confirm-message" class="space-y-3 mb-4">
+                    你确定要执行这个操作吗？
+                </div>
+                <div class="flex justify-end gap-3">
+                    <button id="cancel-confirm" class="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-100 transition">
+                        取消
+                    </button>
+                    <button id="confirm-action" class="px-4 py-2 bg-danger text-white rounded-md hover:bg-danger/90 transition">
+                        确认
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <footer class="mt-8 text-center text-gray-500 text-sm">
-            <p>囧囧的小店</p>
+            <p>街角小店 &copy; 2023 - 一个纯文字经营模拟游戏</p>
         </footer>
     </div>
 
@@ -371,6 +424,7 @@
             },
             currentPromotion: null, // 当前促销活动
             specialEvents: [],      // 特殊事件记录
+            lastSaved: null,        // 最后存档时间
             products: {
                 // 食品饮料类
                 apple: { name: "苹果", cost: 5, basePrice: 8, demand: { min: 3, max: 10 }, category: "food" },
@@ -413,8 +467,16 @@
             inventory: document.getElementById('inventory'),
             logContainer: document.getElementById('log-container'),
             specialInfo: document.getElementById('special-info'),
+            saveNotification: document.getElementById('save-notification'),
+            saveMessage: document.getElementById('save-message'),
+            loadNotification: document.getElementById('load-notification'),
             
-            // 按钮
+            // 存档管理按钮
+            btnNewGame: document.getElementById('btn-new-game'),
+            btnManualSave: document.getElementById('btn-manual-save'),
+            btnClearSave: document.getElementById('btn-clear-save'),
+            
+            // 操作按钮
             btnPurchase: document.getElementById('btn-purchase'),
             btnPricing: document.getElementById('btn-pricing'),
             btnOpen: document.getElementById('btn-open'),
@@ -460,17 +522,34 @@
             eventDetails: document.getElementById('event-details'),
             eventChoices: document.getElementById('event-choices'),
             closeEvent: document.getElementById('close-event'),
-            eventConfirmChoice: document.getElementById('event-confirm-choice')
+            eventConfirmChoice: document.getElementById('event-confirm-choice'),
+            
+            // 确认操作模态框
+            confirmModal: document.getElementById('confirm-modal'),
+            confirmMessage: document.getElementById('confirm-message'),
+            cancelConfirm: document.getElementById('cancel-confirm'),
+            confirmAction: document.getElementById('confirm-action')
         };
 
         // 当前选择的选项（促销、升级、事件选择）
         let selectedOption = null;
+        // 确认框要执行的操作
+        let confirmAction = null;
 
         // 初始化游戏
         function initGame() {
-            // 初始化价格为建议价格
-            for (const key in gameData.products) {
-                gameData.prices[key] = gameData.products[key].basePrice;
+            // 尝试加载保存的游戏
+            const loaded = loadGame();
+            
+            if (!loaded) {
+                // 初始化价格为建议价格
+                for (const key in gameData.products) {
+                    gameData.prices[key] = gameData.products[key].basePrice;
+                }
+                addLogEntry('新游戏开始！你拥有一家街角小店。');
+            } else {
+                addLogEntry('已加载保存的游戏进度', true);
+                showLoadNotification();
             }
             
             // 更新UI
@@ -478,6 +557,148 @@
             
             // 绑定事件
             bindEvents();
+        }
+
+        // 自动存档功能
+        function saveGame(isManual = false) {
+            try {
+                // 记录存档时间
+                gameData.lastSaved = new Date().toISOString();
+                
+                // 创建要保存的数据副本
+                const dataToSave = { ...gameData };
+                
+                // 将数据保存到localStorage
+                localStorage.setItem('shopGameSave', JSON.stringify(dataToSave));
+                
+                // 显示保存通知
+                showSaveNotification(isManual);
+                
+                // 记录到日志
+                if (isManual) {
+                    addLogEntry('已手动保存游戏进度', true);
+                } else {
+                    addLogEntry('游戏已自动保存');
+                }
+                
+                return true;
+            } catch (error) {
+                console.error('保存游戏失败:', error);
+                addLogEntry('保存游戏失败，请稍后重试', true);
+                return false;
+            }
+        }
+
+        // 加载游戏
+        function loadGame() {
+            try {
+                const savedData = localStorage.getItem('shopGameSave');
+                
+                if (savedData) {
+                    const parsedData = JSON.parse(savedData);
+                    
+                    // 更新游戏数据
+                    Object.assign(gameData, parsedData);
+                    
+                    return true;
+                }
+                return false;
+            } catch (error) {
+                console.error('加载游戏失败:', error);
+                addLogEntry('加载保存的游戏失败', true);
+                return false;
+            }
+        }
+
+        // 清除存档
+        function clearSave() {
+            try {
+                localStorage.removeItem('shopGameSave');
+                gameData.lastSaved = null;
+                addLogEntry('已清除所有保存的游戏数据', true);
+                return true;
+            } catch (error) {
+                console.error('清除存档失败:', error);
+                addLogEntry('清除存档失败，请稍后重试', true);
+                return false;
+            }
+        }
+
+        // 开始新游戏
+        function startNewGame() {
+            // 重置游戏数据
+            gameData.money = 1000;
+            gameData.day = 1;
+            gameData.reputation = 50;
+            gameData.season = "春季";
+            gameData.inventory = {};
+            gameData.currentPromotion = null;
+            gameData.specialEvents = [];
+            gameData.lastSaved = null;
+            
+            // 重置价格
+            for (const key in gameData.products) {
+                gameData.prices[key] = gameData.products[key].basePrice;
+            }
+            
+            // 重置升级
+            gameData.upgrades = {
+                shelves: 1,
+                service: 1,
+                advertise: 1
+            };
+            
+            // 清除存档
+            clearSave();
+            
+            // 清空日志
+            elements.logContainer.innerHTML = '';
+            addLogEntry('新游戏开始！你拥有一家街角小店。');
+            
+            // 更新UI
+            updateGameUI();
+        }
+
+        // 显示保存通知
+        function showSaveNotification(isManual = false) {
+            elements.saveMessage.textContent = isManual ? '游戏已手动保存' : '游戏已自动保存';
+            elements.saveNotification.classList.remove('hidden');
+            
+            // 3秒后隐藏通知
+            setTimeout(() => {
+                elements.saveNotification.classList.add('hidden');
+            }, 3000);
+        }
+
+        // 显示加载通知
+        function showLoadNotification() {
+            elements.loadNotification.classList.remove('hidden');
+            
+            // 3秒后隐藏通知
+            setTimeout(() => {
+                elements.loadNotification.classList.add('hidden');
+            }, 3000);
+        }
+
+        // 显示确认对话框
+        function showConfirmDialog(message, action) {
+            elements.confirmMessage.textContent = message;
+            confirmAction = action;
+            elements.confirmModal.classList.remove('hidden');
+        }
+
+        // 关闭确认对话框
+        function closeConfirmDialog() {
+            elements.confirmModal.classList.add('hidden');
+            confirmAction = null;
+        }
+
+        // 执行确认的操作
+        function executeConfirmAction() {
+            if (confirmAction) {
+                confirmAction();
+            }
+            closeConfirmDialog();
         }
 
         // 更新游戏UI
@@ -564,6 +785,13 @@
                     };
                     status += ` ${promoText[gameData.currentPromotion]}。`;
                 }
+            }
+            
+            // 显示最后存档时间
+            if (gameData.lastSaved) {
+                const lastSavedDate = new Date(gameData.lastSaved);
+                const formattedTime = lastSavedDate.toLocaleTimeString();
+                status += ` 上次保存: ${formattedTime}`;
             }
             
             elements.statusText.textContent = status;
@@ -800,6 +1028,9 @@
             // 关闭模态框并更新UI
             elements.purchaseModal.classList.add('hidden');
             updateGameUI();
+            
+            // 自动存档
+            saveGame();
         }
 
         // 显示定价模态框
@@ -870,6 +1101,9 @@
             // 关闭模态框并更新UI
             elements.pricingModal.classList.add('hidden');
             updateGameUI();
+            
+            // 自动存档
+            saveGame();
         }
 
         // 显示促销模态框
@@ -932,6 +1166,9 @@
             // 关闭模态框并更新UI
             elements.promotionModal.classList.add('hidden');
             updateGameUI();
+            
+            // 自动存档
+            saveGame();
         }
 
         // 显示升级模态框
@@ -1010,6 +1247,9 @@
             // 关闭模态框并更新UI
             elements.upgradeModal.classList.add('hidden');
             updateGameUI();
+            
+            // 自动存档
+            saveGame();
         }
 
         // 开门营业
@@ -1176,6 +1416,9 @@
             
             // 更新UI
             updateGameUI();
+            
+            // 自动存档
+            saveGame();
         }
 
         // 显示营业结果
@@ -1248,8 +1491,6 @@
                         this.classList.add('border-primary', 'bg-primary/5');
                         selectedOption = index;
                     });
-                    
-                    elements.eventChoices.appendChild(choiceElement);
                 });
             }
             
@@ -1293,6 +1534,9 @@
             // 关闭事件模态框
             elements.eventModal.classList.add('hidden');
             updateGameUI();
+            
+            // 自动存档
+            saveGame();
         }
 
         // 结束今天，进入下一天
@@ -1309,11 +1553,17 @@
             
             // 如果没有营业，提醒玩家
             if (!hasSold && gameData.day > 1) {
-                if (!confirm('你今天还没有营业，确定要结束今天吗？')) {
-                    return;
-                }
+                showConfirmDialog('你今天还没有营业，确定要结束今天吗？', () => {
+                    proceedToNextDay();
+                });
+                return;
             }
             
+            proceedToNextDay();
+        }
+
+        // 继续到下一天
+        function proceedToNextDay() {
             // 保存当前库存以便明天比较
             gameData.lastInventory = { ...gameData.inventory };
             
@@ -1496,11 +1746,31 @@
             
             // 更新UI
             updateGameUI();
+            
+            // 自动存档
+            saveGame();
         }
 
         // 绑定事件处理函数
         function bindEvents() {
-            // 按钮事件
+            // 存档管理按钮事件
+            elements.btnNewGame.addEventListener('click', () => {
+                showConfirmDialog('开始新游戏将清除当前进度，确定要开始新游戏吗？', startNewGame);
+            });
+            
+            elements.btnManualSave.addEventListener('click', () => {
+                saveGame(true);
+            });
+            
+            elements.btnClearSave.addEventListener('click', () => {
+                showConfirmDialog('确定要清除所有保存的游戏数据吗？', clearSave);
+            });
+            
+            // 确认对话框事件
+            elements.cancelConfirm.addEventListener('click', closeConfirmDialog);
+            elements.confirmAction.addEventListener('click', executeConfirmAction);
+            
+            // 操作按钮事件
             elements.btnPurchase.addEventListener('click', showPurchaseModal);
             elements.btnPricing.addEventListener('click', showPricingModal);
             elements.btnOpen.addEventListener('click', openShop);
@@ -1542,6 +1812,19 @@
                 elements.eventModal.classList.add('hidden');
             });
             elements.eventConfirmChoice.addEventListener('click', handleEventChoice);
+            
+            // 页面关闭前提示保存
+            window.addEventListener('beforeunload', function(e) {
+                // 自动保存
+                saveGame();
+                
+                // 取消默认提示
+                e.preventDefault();
+                // Chrome需要设置returnValue
+                e.returnValue = '';
+                // 短暂延迟确保保存完成
+                return '';
+            });
         }
 
         // 启动游戏
