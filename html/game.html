@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>小店</title>
+    <title>我的小店</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <script>
@@ -69,7 +69,7 @@
 <body class="bg-gray-100 min-h-screen font-sans text-dark">
     <div class="container mx-auto px-4 py-8 flex flex-col items-center">
         <header class="w-full max-w-3xl mb-6 text-center">
-            <h1 class="text-[clamp(1.8rem,5vw,3rem)] font-bold text-primary mb-2 text-shadow">街角小店</h1>
+            <h1 class="text-[clamp(1.8rem,5vw,3rem)] font-bold text-primary mb-2 text-shadow">我的小店</h1>
             <p class="text-gray-600 text-lg">喵喵喵，喵喵喵，喵喵喵。</p>
         </header>
 
@@ -137,7 +137,7 @@
                             <i class="fa fa-info-circle mr-2 text-primary"></i>当前状态
                         </h2>
                         <div id="status-text" class="text-gray-700 leading-relaxed">
-                            欢迎来到你的小店！今天是你开业的第一天。你有¥1000启动资金，声誉50。请开始采购商品，准备迎接顾客吧！
+                            欢迎来到你的我的小店！今天是你开业的第一天。你有¥1000启动资金，声誉50。请开始采购商品，准备迎接顾客吧！
                         </div>
                     </div>
 
@@ -174,7 +174,7 @@
                             <i class="fa fa-book mr-2 text-primary"></i>经营日志
                         </h2>
                         <div id="log-container" class="max-h-64 overflow-y-auto text-gray-700 space-y-2 text-sm">
-                            <div class="log-entry">游戏开始！你拥有一家小店。</div>
+                            <div class="log-entry">游戏开始！你拥有一家我的小店。</div>
                         </div>
                     </div>
                 </div>
@@ -404,7 +404,7 @@
         </div>
 
         <footer class="mt-8 text-center text-gray-500 text-sm">
-            <p>小店</p>
+            <p>我的小店</p>
         </footer>
     </div>
 
@@ -546,7 +546,7 @@
                 for (const key in gameData.products) {
                     gameData.prices[key] = gameData.products[key].basePrice;
                 }
-                addLogEntry('新游戏开始！你拥有一家街角小店。');
+                addLogEntry('新游戏开始！你拥有一家街角我的小店。');
             } else {
                 addLogEntry('已加载保存的游戏进度', true);
                 showLoadNotification();
@@ -653,7 +653,7 @@
             
             // 清空日志
             elements.logContainer.innerHTML = '';
-            addLogEntry('新游戏开始！你拥有一家街角小店。');
+            addLogEntry('新游戏开始！你拥有一家街角我的小店。');
             
             // 更新UI
             updateGameUI();
@@ -759,9 +759,9 @@
             let status = '';
             
             if (gameData.day === 1) {
-                status = '欢迎来到你的街角小店！今天是你开业的第一天。你有¥1000启动资金，声誉50。请开始采购商品，准备迎接顾客吧！';
+                status = '欢迎来到你的街角我的小店！今天是你开业的第一天。你有¥1000启动资金，声誉50。请开始采购商品，准备迎接顾客吧！';
             } else {
-                status = `今天是开业的第${gameData.day}天，${gameData.season}。你的小店目前声誉是${gameData.reputation}，资金¥${gameData.money}。`;
+                status = `今天是开业的第${gameData.day}天，${gameData.season}。你的我的小店目前声誉是${gameData.reputation}，资金¥${gameData.money}。`;
                 
                 // 检查是否有库存
                 let hasInventory = false;
