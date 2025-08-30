@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小小农场</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    
+    <!-- 配置Tailwind自定义颜色和字体 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4CAF50',
+                        secondary: '#8D6E63',
+                        accent: '#FFC107',
+                        field: '#8BC34A',
+                        soil: '#8D6E63',
+                        money: '#4CAF50',
+                        shop: '#FFF9C4',
+                    },
+                    fontFamily: {
+                        farm: ['"Comic Sans MS"', '"Marker Felt"', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .field-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+                gap: 1rem;
+            }
+            .shop-item {
+                transition: all 0.3s ease;
+            }
+            .shop-item:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            }
+            .crop-growth {
+                transition: all 0.5s ease;
+            }
+            .pulse-money {
+                animation: pulse 2s infinite;
+            }
+            @keyframes pulse {
+                0% { transform: scale(1); }
+                50% { transform: scale(1.05); }
+                100% { transform: scale(1); }
+            }
+        }
+    </style>
+</head>
+<body class="bg-green-50 font-farm min-h-screen">
+    <!-- 顶部导航栏 -->
+    <header class="bg-primary text-white shadow-md">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fa fa-leaf text-2xl"></i>
+                <h1 class="text-xl md:text-2xl font-bold">小小农场</h1>
+            </div>
+            
+            <div class="flex items-center space-x-6">
+                <div class="flex items-center space-x-1 pulse-money">
+                    <i class="fa fa-money"></i>
+                    <span id="money" class="font-bold">1000</span>
+                </div>
+                
+                <div class="flex items-center space-x-1">
+                    <i class="fa fa-trophy"></i>
+                    <span id="level" class="font-bold">1</span>
+                </div>
+                
+                <button id="helpBtn" class="hover:text-accent transition-colors">
+                    <i class="fa fa-question-circle text-xl"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主内容区 -->
+    <main class="container mx-auto px-4 py-6">
+        <!-- 状态信息 -->
+        <div class="bg-white rounded-lg shadow-md p-4 mb-6 flex justify-between items-center">
+            <div>
+                <span class="font-semibold">拥有田地: </span>
+                <span id="fieldCount">3</span>/10
+            </div>
+            <div>
+                <span class="font-semibold">已解锁种子: </span>
+                <span id="unlockedSeeds">3</span>
+            </div>
+            <div>
+                <button id="expandFieldBtn" class="bg-secondary hover:bg-secondary/80 text-white py-1 px-3 rounded transition-colors">
+                    <i class="fa fa-plus-circle"></i> 扩展田地 (500)
+                </button>
+            </div>
+        </div>
+        
+        <!-- 农场和田地区域 -->
+        <section class="mb-8">
+            <h2 class="text-xl font-bold mb-4 text-secondary flex items-center">
+                <i class="fa fa-pagelines mr-2"></i> 我的农场
+            </h2>
+            
+            <div id="fieldsContainer" class="field-grid bg-green-100 p-4 rounded-lg shadow-inner">
+                <!-- 田地将通过JavaScript动态生成 -->
+            </div>
+        </section>
+        
+        <!-- 商店区域 -->
+        <section>
+            <h2 class="text-xl font-bold mb-4 text-secondary flex items-center">
+                <i class="fa fa-shopping-cart mr-2"></i> 农场商店
+            </h2>
+            
+            <div class="bg-shop rounded-lg shadow-md p-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <!-- 种子商店 -->
+                    <div class="bg-white rounded-lg shadow p-3">
+                        <h3 class="font-bold text-center mb-2 border-b pb-2">种子商店</h3>
+                        <div id="seedShop" class="space-y-2">
+                            <!-- 种子将通过JavaScript动态生成 -->
+                        </div>
+                    </div>
+                    
+                    <!-- 果实商店 -->
+                    <div class="bg-white rounded-lg shadow p-3">
+                        <h3 class="font-bold text-center mb-2 border-b pb-2">果实出售</h3>
+                        <div id="fruitShop" class="space-y-2">
+                            <!-- 果实将通过JavaScript动态生成 -->
+                        </div>
+                    </div>
+                    
+                    <!-- 我的物品 -->
+                    <div class="bg-white rounded-lg shadow p-3">
+                        <h3 class="font-bold text-center mb-2 border-b pb-2">我的物品</h3>
+                        <div id="inventory" class="space-y-2 max-h-64 overflow-y-auto">
+                            <!-- 物品将通过JavaScript动态生成 -->
+                        </div>
+                    </div>
+                    
+                    <!-- 升级与帮助 -->
+                    <div class="bg-white rounded-lg shadow p-3">
+                        <h3 class="font-bold text-center mb-2 border-b pb-2">农场升级</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <h4 class="font-semibold">更快生长</h4>
+                                <p class="text-sm text-gray-600 mb-1">减少所有作物生长时间</p>
+                                <button id="upgradeGrowthBtn" class="w-full bg-accent hover:bg-accent/80 text-brown-800 py-1 rounded transition-colors text-sm">
+                                    升级 (1000金币)
+                                </button>
+                            </div>
+                            
+                            <div>
+                                <h4 class="font-semibold">自动收获</h4>
+                                <p class="text-sm text-gray-600 mb-1">作物成熟后自动收获</p>
+                                <button id="upgradeAutoHarvestBtn" class="w-full bg-accent hover:bg-accent/80 text-brown-800 py-1 rounded transition-colors text-sm">
+                                    升级 (2000金币)
+                                </button>
+                            </div>
+                            
+                            <div>
+                                <h4 class="font-semibold">批量出售</h4>
+                                <p class="text-sm text-gray-600 mb-1">解锁一次出售多个物品</p>
+                                <button id="upgradeBulkSellBtn" class="w-full bg-accent hover:bg-accent/80 text-brown-800 py-1 rounded transition-colors text-sm">
+                                    升级 (1500金币)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+    
+    <!-- 帮助弹窗 -->
+    <div id="helpModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-primary">游戏帮助</h3>
+                <button id="closeHelpBtn" class="text-gray-500 hover:text-gray-700">
+                    <i class="fa fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-3 text-sm">
+                <p><span class="font-bold">1. 种植作物：</span>从商店购买种子，点击田地选择要种植的作物。</p>
+                <p><span class="font-bold">2. 收获果实：</span>作物成熟后点击即可收获，收获的果实可以出售。</p>
+                <p><span class="font-bold">3. 扩展田地：</span>花费金币可以扩展田地，最多可以拥有10块地。</p>
+                <p><span class="font-bold">4. 农场升级：</span>可以升级农场获得更快生长、自动收获等功能。</p>
+                <p><span class="font-bold">5. 出售物品：</span>在果实商店可以出售收获的果实，升级后可批量出售。</p>
+            </div>
+            
+            <button id="startPlayingBtn" class="mt-6 w-full bg-primary hover:bg-primary/80 text-white py-2 rounded transition-colors">
+                开始游戏
+            </button>
+        </div>
+    </div>
+    
+    <!-- 种植选择弹窗 -->
+    <div id="plantModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-64">
+            <h3 class="text-xl font-bold text-primary mb-4">选择要种植的种子</h3>
+            
+            <div id="seedSelection" class="space-y-2 mb-4">
+                <!-- 种子选择将通过JavaScript动态生成 -->
+            </div>
+            
+            <button id="cancelPlantBtn" class="w-full bg-gray-200 hover:bg-gray-300 py-2 rounded transition-colors">
+                取消
+            </button>
+        </div>
+    </div>
+    
+    <!-- 批量出售弹窗 -->
+    <div id="sellModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-64">
+            <h3 class="text-xl font-bold text-primary mb-4">出售物品</h3>
+            
+            <div id="sellDetails" class="mb-4">
+                <p class="text-center" id="sellItemName">小麦</p>
+                <p class="text-center text-gray-600 mb-2">单价: <span id="sellItemPrice">100</span>金币</p>
+                <p class="text-center text-gray-600 mb-2">库存: <span id="sellItemStock">0</span></p>
+                
+                <div class="flex justify-center items-center space-x-4 my-4">
+                    <button id="decreaseAmountBtn" class="bg-gray-200 hover:bg-gray-300 w-10 h-10 rounded-full flex items-center justify-center">
+                        <i class="fa fa-minus"></i>
+                    </button>
+                    <span id="sellAmount" class="text-2xl font-bold">1</span>
+                    <button id="increaseAmountBtn" class="bg-gray-200 hover:bg-gray-300 w-10 h-10 rounded-full flex items-center justify-center">
+                        <i class="fa fa-plus"></i>
+                    </button>
+                </div>
+                
+                <p class="text-center font-bold text-money">
+                    总计: <span id="sellTotal">100</span>金币
+                </p>
+            </div>
+            
+            <div class="flex space-x-2">
+                <button id="confirmSellBtn" class="flex-1 bg-primary hover:bg-primary/80 text-white py-2 rounded transition-colors">
+                    确认出售
+                </button>
+                <button id="cancelSellBtn" class="flex-1 bg-gray-200 hover:bg-gray-300 py-2 rounded transition-colors">
+                    取消
+                </button>
+            </div>
+        </div>
+    </div>
+    
+
+    <script>
+        // 游戏数据
+        const gameData = {
+            money: 1000,
+            level: 1,
+            fields: 3,
+            maxFields: 10,
+            fieldCost: 500,
+            growthSpeed: 1, // 生长速度倍率，1为正常，小于1更快
+            autoHarvest: false,
+            doubleYield: false,
+            bulkSell: false, // 批量出售功能
+            upgrades: {
+                growth: 0,
+                autoHarvest: 0,
+                bulkSell: 0
+            },
+            inventory: {
+                // 种子库存
+                seeds: {
+                    wheat: 5,
+                    carrot: 3,
+                    potato: 2,
+                    tomato: 0,
+                    corn: 0,
+                    pumpkin: 0
+                },
+                // 果实库存
+                fruits: {
+                    wheat: 0,
+                    carrot: 0,
+                    potato: 0,
+                    tomato: 0,
+                    corn: 0,
+                    pumpkin: 0
+                }
+            },
+            // 田地状态
+            fieldStates: [],
+            // 当前选中的出售物品
+            currentSellItem: null,
+            currentSellAmount: 1,
+            // 作物数据
+            crops: {
+                wheat: {
+                    name: "小麦",
+                    seedPrice: 50,
+                    sellPrice: 100,
+                    growthTime: 10, // 秒
+                    stages: 3,
+                    icon: "🌾",
+                    unlocked: true
+                },
+                carrot: {
+                    name: "胡萝卜",
+                    seedPrice: 80,
+                    sellPrice: 150,
+                    growthTime: 15,
+                    stages: 3,
+                    icon: "🥕",
+                    unlocked: true
+                },
+                potato: {
+                    name: "土豆",
+                    seedPrice: 100,
+                    sellPrice: 200,
+                    growthTime: 20,
+                    stages: 3,
+                    icon: "🥔",
+                    unlocked: true
+                },
+                tomato: {
+                    name: "番茄",
+                    seedPrice: 150,
+                    sellPrice: 300,
+                    growthTime: 25,
+                    stages: 4,
+                    icon: "🍅",
+                    unlocked: false,
+                    unlockLevel: 2
+                },
+                corn: {
+                    name: "玉米",
+                    seedPrice: 200,
+                    sellPrice: 400,
+                    growthTime: 30,
+                    stages: 4,
+                    icon: "🌽",
+                    unlocked: false,
+                    unlockLevel: 3
+                },
+                pumpkin: {
+                    name: "南瓜",
+                    seedPrice: 300,
+                    sellPrice: 600,
+                    growthTime: 40,
+                    stages: 5,
+                    icon: "🎃",
+                    unlocked: false,
+                    unlockLevel: 5
+                }
+            }
+        };
+        
+        // 初始化田地状态
+        function initializeFields() {
+            gameData.fieldStates = [];
+            for (let i = 0; i < gameData.fields; i++) {
+                gameData.fieldStates.push({
+                    crop: null,
+                    growthStage: 0,
+                    plantedTime: null,
+                    isReady: false
+                });
+            }
+            renderFields();
+        }
+        
+        // 渲染田地
+        function renderFields() {
+            const fieldsContainer = document.getElementById('fieldsContainer');
+            fieldsContainer.innerHTML = '';
+            
+            gameData.fieldStates.forEach((field, index) => {
+                const fieldElement = document.createElement('div');
+                fieldElement.className = 'field relative bg-field rounded-md shadow-md aspect-square flex items-center justify-center cursor-pointer transition-all hover:shadow-lg';
+                
+                // 土壤底部
+                fieldElement.innerHTML = `<div class="absolute bottom-0 left-0 right-0 h-1/3 bg-soil rounded-b-md"></div>`;
+                
+                // 作物显示
+                if (field.crop) {
+                    const crop = gameData.crops[field.crop];
+                    let cropSize = 'text-2xl';
+                    if (field.growthStage >= crop.stages) {
+                        cropSize = 'text-4xl';
+                        fieldElement.innerHTML += `<div class="crop-growth ${cropSize}">${crop.icon}</div>`;
+                        fieldElement.innerHTML += `<div class="absolute top-1 right-1 bg-green-600 text-white text-xs px-1 rounded">可收获</div>`;
+                    } else {
+                        // 根据生长阶段调整大小
+                        if (field.growthStage > 0) {
+                            cropSize = field.growthStage === 1 ? 'text-xl' : 
+                                       field.growthStage === 2 ? 'text-2xl' : 'text-3xl';
+                            fieldElement.innerHTML += `<div class="crop-growth ${cropSize}">${crop.icon}</div>`;
+                            
+                            // 生长进度条
+                            const progress = (field.growthStage / crop.stages) * 100;
+                            fieldElement.innerHTML += `
+                                <div class="absolute bottom-0 left-0 right-0 h-1 bg-gray-300">
+                                    <div class="h-full bg-green-600" style="width: ${progress}%"></div>
+                                </div>
+                            `;
+                        }
+                    }
+                } else {
+                    fieldElement.innerHTML += `<div class="text-gray-500"><i class="fa fa-plus text-xl"></i></div>`;
+                }
+                
+                // 点击田地事件
+                fieldElement.addEventListener('click', () => handleFieldClick(index));
+                
+                fieldsContainer.appendChild(fieldElement);
+            });
+            
+            // 更新田地计数显示
+            document.getElementById('fieldCount').textContent = gameData.fields;
+        }
+        
+        // 处理田地点击
+        function handleFieldClick(index) {
+            const field = gameData.fieldStates[index];
+            
+            if (field.crop && field.growthStage >= gameData.crops[field.crop].stages) {
+                // 收获作物
+                harvestCrop(index);
+            } else if (!field.crop) {
+                // 种植作物
+                openPlantModal(index);
+            }
+        }
+        
+        // 收获作物
+        function harvestCrop(index) {
+            const field = gameData.fieldStates[index];
+            const crop = gameData.crops[field.crop];
+            
+            // 计算产量，基础为1，双倍产量升级后为2
+            const yieldAmount = gameData.doubleYield ? 2 : 1;
+            
+            // 增加果实库存
+            gameData.inventory.fruits[field.crop] += yieldAmount;
+            
+            // 显示收获动画/消息
+            showNotification(`收获了 ${yieldAmount} 个${crop.name}!`);
+            
+            // 重置田地
+            gameData.fieldStates[index] = {
+                crop: null,
+                growthStage: 0,
+                plantedTime: null,
+                isReady: false
+            };
+            
+            // 更新界面
+            renderFields();
+            renderInventory();
+            renderFruitShop();
+            checkLevelUp();
+        }
+        
+        // 打开种植弹窗
+        function openPlantModal(fieldIndex) {
+            const seedSelection = document.getElementById('seedSelection');
+            seedSelection.innerHTML = '';
+            
+            // 只显示有库存的种子
+            Object.keys(gameData.inventory.seeds).forEach(cropType => {
+                if (gameData.inventory.seeds[cropType] > 0 && gameData.crops[cropType].unlocked) {
+                    const crop = gameData.crops[cropType];
+                    const seedItem = document.createElement('div');
+                    seedItem.className = 'flex justify-between items-center p-2 border rounded hover:bg-gray-100 cursor-pointer';
+                    seedItem.innerHTML = `
+                        <div class="flex items-center">
+                            <span class="mr-2 text-xl">${crop.icon}</span>
+                            <span>${crop.name}</span>
+                        </div>
+                        <span>x${gameData.inventory.seeds[cropType]}</span>
+                    `;
+                    
+                    seedItem.addEventListener('click', () => {
+                        plantCrop(fieldIndex, cropType);
+                        document.getElementById('plantModal').classList.add('hidden');
+                    });
+                    
+                    seedSelection.appendChild(seedItem);
+                }
+            });
+            
+            // 如果没有可种植的种子
+            if (seedSelection.children.length === 0) {
+                seedSelection.innerHTML = '<p class="text-center text-gray-500">没有可用的种子，请去商店购买</p>';
+            }
+            
+            // 显示弹窗
+            document.getElementById('plantModal').classList.remove('hidden');
+            
+            // 保存当前要种植的田地索引
+            document.getElementById('cancelPlantBtn').onclick = () => {
+                document.getElementById('plantModal').classList.add('hidden');
+            };
+        }
+        
+        // 种植作物
+        function plantCrop(fieldIndex, cropType) {
+            // 减少种子库存
+            gameData.inventory.seeds[cropType]--;
+            
+            // 设置田地状态
+            gameData.fieldStates[fieldIndex] = {
+                crop: cropType,
+                growthStage: 0,
+                plantedTime: new Date(),
+                isReady: false
+            };
+            
+            // 更新界面
+            renderFields();
+            renderInventory();
+            showNotification(`已种植${gameData.crops[cropType].name}!`);
+        }
+        
+        // 渲染种子商店
+        function renderSeedShop() {
+            const seedShop = document.getElementById('seedShop');
+            seedShop.innerHTML = '';
+            
+            Object.keys(gameData.crops).forEach(cropType => {
+                const crop = gameData.crops[cropType];
+                if (!crop.unlocked) return;
+                
+                const seedItem = document.createElement('div');
+                seedItem.className = 'shop-item bg-white border rounded p-2 flex justify-between items-center';
+                seedItem.innerHTML = `
+                    <div class="flex items-center">
+                        <span class="mr-2 text-xl">${crop.icon}</span>
+                        <div>
+                            <div>${crop.name}种子</div>
+                            <div class="text-xs text-gray-500">生长时间: ${crop.growthTime}秒</div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="font-bold text-money">${crop.seedPrice}</div>
+                        <button class="buy-seed-btn text-xs bg-primary hover:bg-primary/80 text-white px-2 py-1 rounded mt-1" data-crop="${cropType}">
+                            购买
+                        </button>
+                    </div>
+                `;
+                
+                seedShop.appendChild(seedItem);
+            });
+            
+            // 添加购买事件监听
+            document.querySelectorAll('.buy-seed-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const cropType = e.target.dataset.crop;
+                    buySeed(cropType);
+                });
+            });
+        }
+        
+        // 购买种子
+        function buySeed(cropType) {
+            const crop = gameData.crops[cropType];
+            
+            if (gameData.money >= crop.seedPrice) {
+                gameData.money -= crop.seedPrice;
+                gameData.inventory.seeds[cropType]++;
+                
+                // 更新界面
+                updateMoneyDisplay();
+                renderSeedShop();
+                renderInventory();
+                showNotification(`购买了1个${crop.name}种子!`);
+            } else {
+                showNotification('金币不足!', 'error');
+            }
+        }
+        
+        // 渲染果实商店
+        function renderFruitShop() {
+            const fruitShop = document.getElementById('fruitShop');
+            fruitShop.innerHTML = '';
+            
+            Object.keys(gameData.inventory.fruits).forEach(cropType => {
+                if (gameData.inventory.fruits[cropType] > 0) {
+                    const crop = gameData.crops[cropType];
+                    const fruitItem = document.createElement('div');
+                    fruitItem.className = 'shop-item bg-white border rounded p-2 flex justify-between items-center';
+                    fruitItem.innerHTML = `
+                        <div class="flex items-center">
+                            <span class="mr-2 text-xl">${crop.icon}</span>
+                            <div>
+                                <div>${crop.name}</div>
+                                <div class="text-xs text-gray-500">库存: ${gameData.inventory.fruits[cropType]}</div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="font-bold text-money">${crop.sellPrice}</div>
+                            <button class="sell-fruit-btn text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded mt-1" data-crop="${cropType}">
+                                ${gameData.bulkSell ? '批量出售' : '出售'}
+                            </button>
+                        </div>
+                    `;
+                    
+                    fruitShop.appendChild(fruitItem);
+                }
+            });
+            
+            // 如果没有可出售的果实
+            if (fruitShop.children.length === 0) {
+                fruitShop.innerHTML = '<p class="text-center text-gray-500">没有可出售的果实</p>';
+            } else {
+                // 添加出售事件监听
+                document.querySelectorAll('.sell-fruit-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const cropType = e.target.dataset.crop;
+                        if (gameData.bulkSell) {
+                            openSellModal(cropType);
+                        } else {
+                            sellFruit(cropType, 1);
+                        }
+                    });
+                });
+            }
+        }
+        
+        // 打开批量出售弹窗
+        function openSellModal(cropType) {
+            gameData.currentSellItem = cropType;
+            gameData.currentSellAmount = 1;
+            
+            const crop = gameData.crops[cropType];
+            const stock = gameData.inventory.fruits[cropType];
+            
+            document.getElementById('sellItemName').textContent = `${crop.icon} ${crop.name}`;
+            document.getElementById('sellItemPrice').textContent = crop.sellPrice;
+            document.getElementById('sellItemStock').textContent = stock;
+            document.getElementById('sellAmount').textContent = gameData.currentSellAmount;
+            document.getElementById('sellTotal').textContent = crop.sellPrice * gameData.currentSellAmount;
+            
+            document.getElementById('sellModal').classList.remove('hidden');
+        }
+        
+        // 确认出售
+        function confirmSell() {
+            if (gameData.currentSellItem) {
+                sellFruit(gameData.currentSellItem, gameData.currentSellAmount);
+                document.getElementById('sellModal').classList.add('hidden');
+                gameData.currentSellItem = null;
+                gameData.currentSellAmount = 1;
+            }
+        }
+        
+        // 更新出售数量
+        function updateSellAmount(change) {
+            if (!gameData.currentSellItem) return;
+            
+            const stock = gameData.inventory.fruits[gameData.currentSellItem];
+            const newAmount = gameData.currentSellAmount + change;
+            
+            if (newAmount >= 1 && newAmount <= stock) {
+                gameData.currentSellAmount = newAmount;
+                const crop = gameData.crops[gameData.currentSellItem];
+                
+                document.getElementById('sellAmount').textContent = gameData.currentSellAmount;
+                document.getElementById('sellTotal').textContent = crop.sellPrice * gameData.currentSellAmount;
+            }
+        }
+        
+        // 出售果实
+        function sellFruit(cropType, amount) {
+            if (gameData.inventory.fruits[cropType] >= amount) {
+                const crop = gameData.crops[cropType];
+                gameData.inventory.fruits[cropType] -= amount;
+                const totalMoney = crop.sellPrice * amount;
+                gameData.money += totalMoney;
+                
+                // 更新界面
+                updateMoneyDisplay();
+                renderFruitShop();
+                renderInventory();
+                showNotification(`出售了${amount}个${crop.name}，获得${totalMoney}金币!`);
+                checkLevelUp();
+            }
+        }
+        
+        // 渲染物品栏
+        function renderInventory() {
+            const inventory = document.getElementById('inventory');
+            inventory.innerHTML = '';
+            
+            // 种子部分
+            inventory.innerHTML += '<div class="font-semibold text-gray-700 mb-1">种子:</div>';
+            let hasSeeds = false;
+            
+            Object.keys(gameData.inventory.seeds).forEach(cropType => {
+                if (gameData.inventory.seeds[cropType] > 0) {
+                    hasSeeds = true;
+                    const crop = gameData.crops[cropType];
+                    const seedItem = document.createElement('div');
+                    seedItem.className = 'flex justify-between items-center text-sm p-1 border-b';
+                    seedItem.innerHTML = `
+                        <div class="flex items-center">
+                            <span class="mr-2">${crop.icon}</span>
+                            <span>${crop.name}种子</span>
+                        </div>
+                        <span>x${gameData.inventory.seeds[cropType]}</span>
+                    `;
+                    inventory.appendChild(seedItem);
+                }
+            });
+            
+            if (!hasSeeds) {
+                inventory.innerHTML += '<div class="text-sm text-gray-500 mb-2">没有种子</div>';
+            }
+            
+            // 果实部分
+            inventory.innerHTML += '<div class="font-semibold text-gray-700 mb-1 mt-2">果实:</div>';
+            let hasFruits = false;
+            
+            Object.keys(gameData.inventory.fruits).forEach(cropType => {
+                if (gameData.inventory.fruits[cropType] > 0) {
+                    hasFruits = true;
+                    const crop = gameData.crops[cropType];
+                    const fruitItem = document.createElement('div');
+                    fruitItem.className = 'flex justify-between items-center text-sm p-1 border-b';
+                    fruitItem.innerHTML = `
+                        <div class="flex items-center">
+                            <span class="mr-2">${crop.icon}</span>
+                            <span>${crop.name}</span>
+                        </div>
+                        <span>x${gameData.inventory.fruits[cropType]}</span>
+                    `;
+                    inventory.appendChild(fruitItem);
+                }
+            });
+            
+            if (!hasFruits) {
+                inventory.innerHTML += '<div class="text-sm text-gray-500">没有果实</div>';
+            }
+        }
+        
+        // 更新金币显示
+        function updateMoneyDisplay() {
+            document.getElementById('money').textContent = gameData.money;
+        }
+        
+        // 检查是否升级
+        function checkLevelUp() {
+            // 简单的升级逻辑：根据总财富计算等级
+            const totalWealth = gameData.money + calculateInventoryValue();
+            const newLevel = Math.floor(totalWealth / 1000) + 1;
+            
+            if (newLevel > gameData.level) {
+                const levelUpAmount = newLevel - gameData.level;
+                gameData.level = newLevel;
+                document.getElementById('level').textContent = gameData.level;
+                showNotification(`恭喜！升级到${gameData.level}级了！`, 'success');
+                
+                // 检查是否解锁新种子
+                checkUnlockSeeds();
+            }
+        }
+        
+        // 计算库存价值
+        function calculateInventoryValue() {
+            let total = 0;
+            
+            // 计算种子价值
+            Object.keys(gameData.inventory.seeds).forEach(cropType => {
+                total += gameData.inventory.seeds[cropType] * gameData.crops[cropType].seedPrice;
+            });
+            
+            // 计算果实价值
+            Object.keys(gameData.inventory.fruits).forEach(cropType => {
+                total += gameData.inventory.fruits[cropType] * gameData.crops[cropType].sellPrice;
+            });
+            
+            return total;
+        }
+        
+        // 检查是否解锁新种子
+        function checkUnlockSeeds() {
+            let unlockedNew = false;
+            
+            Object.keys(gameData.crops).forEach(cropType => {
+                const crop = gameData.crops[cropType];
+                if (!crop.unlocked && crop.unlockLevel && gameData.level >= crop.unlockLevel) {
+                    crop.unlocked = true;
+                    unlockedNew = true;
+                    showNotification(`解锁了新作物: ${crop.name}!`, 'success');
+                }
+            });
+            
+            if (unlockedNew) {
+                renderSeedShop();
+                updateUnlockedSeedsCount();
+            }
+        }
+        
+        // 更新已解锁种子计数
+        function updateUnlockedSeedsCount() {
+            const count = Object.values(gameData.crops).filter(crop => crop.unlocked).length;
+            document.getElementById('unlockedSeeds').textContent = count;
+        }
+        
+        // 扩展田地
+        function expandField() {
+            if (gameData.fields < gameData.maxFields && gameData.money >= gameData.fieldCost) {
+                gameData.money -= gameData.fieldCost;
+                gameData.fields++;
+                
+                // 增加新田地
+                gameData.fieldStates.push({
+                    crop: null,
+                    growthStage: 0,
+                    plantedTime: null,
+                    isReady: false
+                });
+                
+                // 更新田地成本（每次扩展增加20%）
+                gameData.fieldCost = Math.floor(gameData.fieldCost * 1.2);
+                document.getElementById('expandFieldBtn').innerHTML = 
+                    `<i class="fa fa-plus-circle"></i> 扩展田地 (${gameData.fieldCost})`;
+                
+                // 更新界面
+                updateMoneyDisplay();
+                renderFields();
+                showNotification(`成功扩展田地！现在有${gameData.fields}块地了！`);
+                
+                // 如果达到最大田地，禁用按钮
+                if (gameData.fields >= gameData.maxFields) {
+                    document.getElementById('expandFieldBtn').disabled = true;
+                    document.getElementById('expandFieldBtn').classList.add('opacity-50', 'cursor-not-allowed');
+                    document.getElementById('expandFieldBtn').innerHTML = 
+                        `<i class="fa fa-check-circle"></i> 已达最大田地`;
+                }
+            } else if (gameData.fields >= gameData.maxFields) {
+                showNotification('已经是最大田地数量了！', 'info');
+            } else {
+                showNotification('金币不足，无法扩展田地！', 'error');
+            }
+        }
+        
+        // 升级生长速度
+        function upgradeGrowthSpeed() {
+            const upgradeCost = 1000 * (gameData.upgrades.growth + 1);
+            
+            if (gameData.money >= upgradeCost) {
+                gameData.money -= upgradeCost;
+                gameData.upgrades.growth++;
+                gameData.growthSpeed = 1 / (1 + gameData.upgrades.growth * 0.5); // 每次升级加快50%
+                
+                updateMoneyDisplay();
+                document.getElementById('upgradeGrowthBtn').innerHTML = 
+                    `升级 (${1000 * (gameData.upgrades.growth + 1)}金币) (${gameData.upgrades.growth}级)`;
+                showNotification(`生长速度升级！作物生长速度提升了！`, 'success');
+            } else {
+                showNotification('金币不足，无法升级！', 'error');
+            }
+        }
+        
+        // 升级自动收获
+        function upgradeAutoHarvest() {
+            if (gameData.upgrades.autoHarvest === 0 && gameData.money >= 2000) {
+                gameData.money -= 2000;
+                gameData.upgrades.autoHarvest = 1;
+                gameData.autoHarvest = true;
+                
+                updateMoneyDisplay();
+                document.getElementById('upgradeAutoHarvestBtn').innerHTML = 
+                    `已升级 (1级)`;
+                document.getElementById('upgradeAutoHarvestBtn').classList.add('bg-gray-400', 'cursor-not-allowed');
+                document.getElementById('upgradeAutoHarvestBtn').removeEventListener('click', upgradeAutoHarvest);
+                showNotification(`自动收获已开启！作物成熟后会自动收获！`, 'success');
+            } else if (gameData.upgrades.autoHarvest > 0) {
+                showNotification('已经升级过自动收获了！', 'info');
+            } else {
+                showNotification('金币不足，无法升级！', 'error');
+            }
+        }
+        
+        // 升级批量出售
+        function upgradeBulkSell() {
+            if (gameData.upgrades.bulkSell === 0 && gameData.money >= 1500) {
+                gameData.money -= 1500;
+                gameData.upgrades.bulkSell = 1;
+                gameData.bulkSell = true;
+                
+                updateMoneyDisplay();
+                document.getElementById('upgradeBulkSellBtn').innerHTML = 
+                    `已升级 (1级)`;
+                document.getElementById('upgradeBulkSellBtn').classList.add('bg-gray-400', 'cursor-not-allowed');
+                document.getElementById('upgradeBulkSellBtn').removeEventListener('click', upgradeBulkSell);
+                showNotification(`批量出售已开启！可以一次出售多个物品了！`, 'success');
+                
+                // 更新商店显示
+                renderFruitShop();
+            } else if (gameData.upgrades.bulkSell > 0) {
+                showNotification('已经升级过批量出售了！', 'info');
+            } else {
+                showNotification('金币不足，无法升级！', 'error');
+            }
+        }
+        
+        // 显示通知
+        function showNotification(message, type = 'info') {
+            // 创建通知元素
+            const notification = document.createElement('div');
+            notification.className = `fixed bottom-4 right-4 px-4 py-2 rounded shadow-lg z-50 transition-all transform translate-y-0 opacity-100`;
+            
+            // 根据类型设置样式
+            switch(type) {
+                case 'success':
+                    notification.classList.add('bg-green-500', 'text-white');
+                    break;
+                case 'error':
+                    notification.classList.add('bg-red-500', 'text-white');
+                    break;
+                case 'info':
+                default:
+                    notification.classList.add('bg-blue-500', 'text-white');
+            }
+            
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            // 3秒后隐藏通知
+            setTimeout(() => {
+                notification.classList.add('opacity-0', 'translate-y-4');
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+        
+        // 更新作物生长状态
+        function updateCropGrowth() {
+            const now = new Date();
+            
+            gameData.fieldStates.forEach((field, index) => {
+                if (field.crop && field.growthStage < gameData.crops[field.crop].stages) {
+                    const crop = gameData.crops[field.crop];
+                    const growthTimeMs = crop.growthTime * 1000 * gameData.growthSpeed;
+                    const elapsedMs = now - field.plantedTime;
+                    const growthProgress = elapsedMs / growthTimeMs;
+                    const newGrowthStage = Math.min(Math.floor(growthProgress * crop.stages), crop.stages);
+                    
+                    if (newGrowthStage > field.growthStage) {
+                        field.growthStage = newGrowthStage;
+                        
+                        // 如果成熟了
+                        if (field.growthStage >= crop.stages) {
+                            field.isReady = true;
+                            showNotification(`${crop.name}成熟了，可以收获了！`);
+                            
+                            // 如果开启了自动收获
+                            if (gameData.autoHarvest) {
+                                setTimeout(() => {
+                                    harvestCrop(index);
+                                }, 1000);
+                            }
+                        }
+                        
+                        renderFields();
+                    }
+                }
+            });
+        }
+        
+        // 初始化游戏
+        function initGame() {
+            // 初始化田地
+            initializeFields();
+            
+            // 渲染商店和物品栏
+            renderSeedShop();
+            renderFruitShop();
+            renderInventory();
+            updateUnlockedSeedsCount();
+            
+            // 设置事件监听
+            document.getElementById('expandFieldBtn').addEventListener('click', expandField);
+            document.getElementById('upgradeGrowthBtn').addEventListener('click', upgradeGrowthSpeed);
+            document.getElementById('upgradeAutoHarvestBtn').addEventListener('click', upgradeAutoHarvest);
+            document.getElementById('upgradeBulkSellBtn').addEventListener('click', upgradeBulkSell);
+            
+            // 帮助按钮
+            document.getElementById('helpBtn').addEventListener('click', () => {
+                document.getElementById('helpModal').classList.remove('hidden');
+            });
+            
+            // 关闭帮助按钮
+            document.getElementById('closeHelpBtn').addEventListener('click', () => {
+                document.getElementById('helpModal').classList.add('hidden');
+            });
+            
+            document.getElementById('startPlayingBtn').addEventListener('click', () => {
+                document.getElementById('helpModal').classList.add('hidden');
+            });
+            
+            // 批量出售相关按钮
+            document.getElementById('decreaseAmountBtn').addEventListener('click', () => updateSellAmount(-1));
+            document.getElementById('increaseAmountBtn').addEventListener('click', () => updateSellAmount(1));
+            document.getElementById('confirmSellBtn').addEventListener('click', confirmSell);
+            document.getElementById('cancelSellBtn').addEventListener('click', () => {
+                document.getElementById('sellModal').classList.add('hidden');
+                gameData.currentSellItem = null;
+                gameData.currentSellAmount = 1;
+            });
+            
+            // 每秒钟更新一次作物生长状态
+            setInterval(updateCropGrowth, 1000);
+            
+            // 显示欢迎消息
+            setTimeout(() => {
+                showNotification('欢迎来到快乐农场！点击问号按钮查看帮助', 'info');
+            }, 1000);
+        }
+        
+        // 启动游戏
+        window.onload = initGame;
+    </script>
+</body>
+</html>
