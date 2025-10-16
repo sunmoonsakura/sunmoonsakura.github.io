@@ -1,47 +1,48 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>小怪兽</title>
     <style>
         /* 修改后的底部样式 */
-footer {
-    background-color: var(--dark-color);
-    color: white;
-    text-align: center;
-    padding: 1.5rem;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    z-index: 100;
-}
-
-/* 修改后的主要内容区域 */
-main {
-    max-width: 1200px;
-    margin: 2rem auto;
-    padding: 0 1.5rem;
-    padding-bottom: 100px; /* 防止内容被footer遮挡 */
-}
-
-/* 移动端调整 */
-@media (max-width: 480px) {
-    main {
+        footer {
+            background-color: var(--dark-color);
+            color: white;
+            text-align: center;
+            padding: 1.5rem;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            z-index: 100;
+        }
+        
+        /* 修改后的主要内容区域 */
+        main {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1.5rem;
+            padding-bottom: 100px; /* 防止内容被footer遮挡 */
+        }
+        
+        /* 移动端调整 */
+        @media (max-width: 480px) {
+            main {
         padding: 0 1rem;
         padding-bottom: 80px; /* 移动端调整底部内边距 */
-    }
-}
-
-/* 添加body样式 */
-body {
-    background-color: var(--light-color);
-    color: var(--text-color);
-    line-height: 1.6;
-    min-height: 100vh; /* 确保body至少有视口高度 */
-    position: relative; /* 为固定定位的footer提供参照 */
-}
+            }
+        }
+        
+        /* 添加body样式 */
+        body {
+            background-color: var(--light-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            min-height: 100vh; /* 确保body至少有视口高度 */
+            position: relative; /* 为固定定位的footer提供参照 */
+        }
         /* 基础样式 */
         * {
             margin: 0;
@@ -288,6 +289,7 @@ body {
         }
     </style>
 </head>
+
 <body>
     <!-- 头部区域 -->
     <header>
@@ -502,4 +504,5 @@ body {
         });
     </script>
 </body>
+
 </html>
