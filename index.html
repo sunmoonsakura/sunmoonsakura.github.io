@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小怪兽</title>
+    <style>
+        /* 基础样式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+        }
+        
+        :root {
+            --primary-color: #4a6fa5;
+            --secondary-color: #6b8cbc;
+            --accent-color: #ff7e5f;
+            --light-color: #f5f7fa;
+            --dark-color: #2c3e50;
+            --text-color: #333;
+            --border-radius: 8px;
+            --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+        
+        body {
+            background-color: var(--light-color);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+        
+        /* 头部样式 */
+        header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 1.5rem 2rem;
+            box-shadow: var(--box-shadow);
+            position: relative;
+        }
+        
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+        
+        .logo p {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        /* 移动端菜单按钮 */
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        
+        /* 移动端菜单 */
+        .mobile-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            width: 200px;
+            border-radius: 0 0 var(--border-radius) var(--border-radius);
+            box-shadow: var(--box-shadow);
+            z-index: 1000;
+        }
+        
+        .mobile-menu.active {
+            display: block;
+        }
+        
+        .mobile-menu a {
+            display: block;
+            padding: 1rem;
+            color: var(--dark-color);
+            text-decoration: none;
+            border-bottom: 1px solid #eee;
+            transition: var(--transition);
+        }
+        
+        .mobile-menu a:hover {
+            background-color: var(--light-color);
+            color: var(--primary-color);
+        }
+        
+        /* 主要内容区域 */
+        main {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1.5rem;
+        }
+        
+        /* 分类容器 */
+        .categories {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        /* 分类卡片样式 */
+        .category {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            overflow: hidden;
+            transition: var(--transition);
+        }
+        
+        .category:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+        }
+        
+        /* 分类标题 */
+        .category-header {
+            padding: 1.2rem;
+            background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+            color: white;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: var(--transition);
+        }
+        
+        .category-header:hover {
+            background: linear-gradient(to right, var(--secondary-color), var(--primary-color));
+        }
+        
+        .category-header h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+        
+        .category-header .icon {
+            transition: var(--transition);
+        }
+        
+        .category.active .category-header .icon {
+            transform: rotate(180deg);
+        }
+        
+        /* 分类内容 */
+        .category-content {
+            padding: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease, padding 0.3s ease;
+        }
+        
+        .category.active .category-content {
+            padding: 1.2rem;
+            max-height: 500px;
+        }
+        
+        /* 内容项样式 */
+        .content-item {
+            margin-bottom: 1.2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .content-item:last-child {
+            margin-bottom: 0;
+            border-bottom: none;
+        }
+        
+        .content-item h3 {
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+            color: var(--dark-color);
+        }
+        
+        .content-item a {
+            display: inline-block;
+            padding: 0.4rem 0.8rem;
+            background-color: var(--light-color);
+            color: var(--primary-color);
+            text-decoration: none;
+            border-radius: 4px;
+            transition: var(--transition);
+            font-size: 0.9rem;
+        }
+        
+        .content-item a:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        /* 底部样式 */
+        footer {
+            background-color: var(--dark-color);
+            color: white;
+            text-align: center;
+            padding: 1.5rem;
+            margin-top: 3rem;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                text-align: center;
+                gap: 1rem;
+            }
+            
+            .mobile-menu-btn {
+                display: block;
+                position: absolute;
+                top: 1.5rem;
+                right: 1.5rem;
+            }
+            
+            .categories {
+                grid-template-columns: 1fr;
+            }
+            
+            .category-header {
+                padding: 1rem;
+            }
+            
+            .category.active .category-content {
+                padding: 1rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            header {
+                padding: 1rem;
+            }
+            
+            main {
+                padding: 0 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 头部区域 -->
+    <header>
+        <div class="header-content">
+            <div class="logo">
+                <h1>小怪兽</h1>
+                <p>分享一些自制的游戏软件工具和第三方网址~</p>
+            </div>
+            <!-- 移动端菜单按钮 -->
+            <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
+            <!-- 移动端菜单 -->
+            <div class="mobile-menu" id="mobileMenu">
+                <a href="#games">游戏</a>
+                <a href="#software">软件</a>
+                <a href="#tools">工具</a>
+                <a href="#navigation">网址导航</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要内容区域 -->
+    <main>
+        <div class="categories">
+            <!-- 游戏分类 -->
+            <div class="category" id="games">
+                <div class="category-header">
+                    <h2>游戏</h2>
+                    <span class="icon">▼</span>
+                </div>
+                <div class="category-content">
+                    <!-- 可以自由拓展的内容区域 -->
+                    <div class="content-item">
+                        <h3>RPG游戏</h3>
+                        <a href="">《未命名》(暂未添加)</a>
+                    </div>
+                    <div class="content-item">
+                        <h3>小游戏</h3>
+                        <a href="html/games/shopgame.html">我的小店</a>
+                        <a href="html/games/farmgame.html">我的农场</a>
+                        <a href="html/games/rpgroguelike.html">肉鸽冒险</a>
+                        <a href="html/games/scgame.html">生存冒险</a>
+                    </div>
+                    <!-- 拓展示例：添加更多内容 -->
+                    <!-- 
+                    <div class="content-item">
+                        <h3>测试</h3>
+                        <a href="html/1.html">点击</a>
+                    </div>
+                    <div class="content-item">
+                        <h3>测试</h3>
+                        <a href="html/1.html">点击</a>
+                    </div>
+                    -->
+                </div>
+            </div>
+
+            <!-- 软件分类 -->
+            <div class="category" id="software">
+                <div class="category-header">
+                    <h2>软件</h2>
+                    <span class="icon">▼</span>
+                </div>
+                <div class="category-content">
+                    <!-- 可以自由拓展的内容区域 -->
+                    <div class="content-item">
+                        <h3>Minecraft</h3>
+                        <a href="">数据包工具(暂未添加)</a>
+                    </div>
+                    <!-- 拓展示例：添加更多内容 -->
+                    <!-- 
+                    <div class="content-item">
+                        <h3>测试</h3>
+                        <a href="html/1.html">点击</a>
+                    </div>
+                    <div class="content-item">
+                        <h3>测试</h3>
+                        <a href="html/1.html">点击</a>
+                    </div>
+                    -->
+                </div>
+            </div>
+
+            <!-- 工具分类 -->
+            <div class="category" id="tools">
+                <div class="category-header">
+                    <h2>工具</h2>
+                    <span class="icon">▼</span>
+                </div>
+                <div class="category-content">
+                    <!-- 可以自由拓展的内容区域 -->
+                    <div class="content-item">
+                        <h3>光遇</h3>
+                        <a href="html/games/Sky/Skyindex.html">光遇工具合集</a>
+                    </div>
+                    <div class="content-item">
+                        <h3>压缩工具</h3>
+                        <a href="html/tools/PDF.html">PDF压缩</a>
+                    </div>
+                    <!-- 拓展示例：添加更多内容 -->
+                    <!-- 
+                    <div class="content-item">
+                        <h3>测试</h3>
+                        <a href="html/1.html">点击</a>
+                    </div>
+                    <div class="content-item">
+                        <h3>测试</h3>
+                        <a href="html/1.html">点击</a>
+                    </div>
+                    -->
+                </div>
+            </div>
+
+            <!-- 网址导航分类 -->
+            <div class="category" id="navigation">
+                <div class="category-header">
+                    <h2>网址导航</h2>
+                    <span class="icon">▼</span>
+                </div>
+                <div class="category-content">
+                    <!-- 可以自由拓展的内容区域 -->
+                    <div class="content-item">
+                        <h3>omofun</h3>
+                        <a href="https://fb.omoo.tv/">omofun发布页</a>
+                        <a href="https://www.omoo.app/">omofun下载</a>
+                    </div>
+                    <div class="content-item">
+                        <h3>硬核指南</h3>
+                        <a href="https://yinghezhinan.com/">硬核指南主页</a>
+                    </div>
+                    <!-- 拓展示例：添加更多内容 -->
+                    <!-- 
+                    <div class="content-item">
+                        <h3>测试</h3>
+                        <a href="html/1.html">点击</a>
+                    </div>
+                    <div class="content-item">
+                        <h3>测试</h3>
+                        <a href="html/1.html">点击</a>
+                    </div>
+                    -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 底部区域 -->
+    <footer>
+        <p>&copy; 2025 小怪兽</p>
+    </footer>
+
+    <script>
+        // 页面加载完成后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取所有分类
+            const categories = document.querySelectorAll('.category');
+            // 获取移动端菜单按钮和菜单
+            const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+            const mobileMenu = document.getElementById('mobileMenu');
+            
+            // 默认展开第一个分类
+            if (categories.length > 0) {
+                categories[0].classList.add('active');
+            }
+            
+            // 为每个分类标题添加点击事件
+            categories.forEach(category => {
+                const header = category.querySelector('.category-header');
+                
+                header.addEventListener('click', function() {
+                    // 如果当前分类已激活，则关闭它
+                    if (category.classList.contains('active')) {
+                        category.classList.remove('active');
+                    } else {
+                        // 否则，关闭所有其他分类，打开当前分类
+                        categories.forEach(c => c.classList.remove('active'));
+                        category.classList.add('active');
+                    }
+                });
+            });
+            
+            // 移动端菜单按钮点击事件
+            mobileMenuBtn.addEventListener('click', function() {
+                mobileMenu.classList.toggle('active');
+            });
+            
+            // 点击移动端菜单项后关闭菜单
+            const mobileMenuLinks = mobileMenu.querySelectorAll('a');
+            mobileMenuLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    mobileMenu.classList.remove('active');
+                    
+                    // 滚动到对应分类
+                    const targetId = this.getAttribute('href').substring(1);
+                    const targetCategory = document.getElementById(targetId);
+                    if (targetCategory) {
+                        // 展开目标分类
+                        categories.forEach(c => c.classList.remove('active'));
+                        targetCategory.classList.add('active');
+                        
+                        // 平滑滚动到目标位置
+                        targetCategory.scrollIntoView({ behavior: 'smooth' });
+                    }
+                });
+            });
+            
+            // 点击页面其他地方关闭移动端菜单
+            document.addEventListener('click', function(event) {
+                if (!mobileMenuBtn.contains(event.target) && !mobileMenu.contains(event.target)) {
+                    mobileMenu.classList.remove('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

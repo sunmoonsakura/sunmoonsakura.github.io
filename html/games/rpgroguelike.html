@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>深渊地牢 - 文字冒险RPG</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#8B5CF6',
+                        secondary: '#EC4899',
+                        dark: '#1E293B',
+                        light: '#F8FAFC',
+                        accent: '#F59E0B',
+                        success: '#10B981',
+                        danger: '#EF4444',
+                    },
+                    fontFamily: {
+                        mono: ['Courier New', 'monospace'],
+                        fantasy: ['Palatino', 'Georgia', 'serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .text-shadow {
+                text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            .text-shadow-lg {
+                text-shadow: 0 4px 8px rgba(0,0,0,0.12), 0 2px 4px rgba(0,0,0,0.08);
+            }
+            .bg-noise {
+                background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.1'/%3E%3C/svg%3E");
+            }
+            .animate-typewriter {
+                overflow: hidden;
+                border-right: .15em solid #8B5CF6;
+                white-space: nowrap;
+                margin: 0 auto;
+                animation: 
+                    typing 3.5s steps(40, end),
+                    blink-caret .75s step-end infinite;
+            }
+            @keyframes typing {
+                from { width: 0 }
+                to { width: 100% }
+            }
+            @keyframes blink-caret {
+                from, to { border-color: transparent }
+                50% { border-color: #8B5CF6 }
+            }
+        }
+    </style>
+</head>
+<body class="bg-dark text-light bg-noise min-h-screen flex flex-col">
+    <!-- 游戏标题栏 -->
+    <header class="bg-primary/20 backdrop-blur-sm border-b border-primary/30 py-3 px-4 sm:px-6">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-[clamp(1.5rem,3vw,2rem)] font-fantasy font-bold text-primary text-shadow-lg">
+                <i class="fa fa-dungeon mr-2"></i>深渊地牢
+            </h1>
+            <div class="flex items-center space-x-4">
+                <button id="helpBtn" class="text-light/80 hover:text-primary transition-colors duration-200">
+                    <i class="fa fa-question-circle mr-1"></i> 帮助
+                </button>
+                <button id="resetBtn" class="text-light/80 hover:text-danger transition-colors duration-200">
+                    <i class="fa fa-refresh mr-1"></i> 重置
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要游戏区域 -->
+    <main class="flex-1 container mx-auto px-4 sm:px-6 py-6 flex flex-col lg:flex-row gap-6">
+        <!-- 角色状态栏 -->
+        <aside class="lg:w-1/4 xl:w-1/5 bg-dark/60 backdrop-blur-sm border border-primary/20 rounded-lg p-4 h-fit">
+            <h2 class="text-xl font-bold text-primary mb-4 border-b border-primary/30 pb-2">
+                <i class="fa fa-user-circle mr-2"></i>角色状态
+            </h2>
+            <div id="playerStats" class="space-y-3 text-sm sm:text-base">
+                <div class="flex justify-between">
+                    <span class="text-light/70">姓名:</span>
+                    <span id="playerName" class="font-bold">勇者</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-light/70">生命值:</span>
+                    <span id="playerHealth" class="text-success font-bold">100/100</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-light/70">魔法值:</span>
+                    <span id="playerMana" class="text-primary font-bold">50/50</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-light/70">攻击力:</span>
+                    <span id="playerAttack" class="font-bold">10</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-light/70">防御力:</span>
+                    <span id="playerDefense" class="font-bold">5</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-light/70">等级:</span>
+                    <span id="playerLevel" class="font-bold">1</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-light/70">经验值:</span>
+                    <span id="playerExp" class="font-bold">0/100</span>
+                </div>
+            </div>
+
+            <h2 class="text-xl font-bold text-primary mt-6 mb-4 border-b border-primary/30 pb-2">
+                <i class="fa fa-briefcase mr-2"></i>物品栏
+            </h2>
+            <div id="inventory" class="space-y-2 text-sm sm:text-base max-h-48 overflow-y-auto pr-1">
+                <p class="text-light/50 italic">暂无物品</p>
+            </div>
+
+            <h2 class="text-xl font-bold text-primary mt-6 mb-4 border-b border-primary/30 pb-2">
+                <i class="fa fa-map-signs mr-2"></i>当前位置
+            </h2>
+            <div id="currentLocation" class="text-sm sm:text-base">
+                <p>未知区域</p>
+            </div>
+        </aside>
+
+        <!-- 游戏日志和输入区域 -->
+        <div class="lg:w-3/4 xl:w-4/5 flex flex-col gap-4">
+            <!-- 游戏日志区域 -->
+            <div class="bg-dark/60 backdrop-blur-sm border border-primary/20 rounded-lg p-4 flex-1 flex flex-col">
+                <h2 class="text-xl font-bold text-primary mb-4 border-b border-primary/30 pb-2">
+                    <i class="fa fa-book mr-2"></i>冒险日志
+                </h2>
+                <div id="gameLog" class="flex-1 overflow-y-auto pr-2 space-y-4 text-sm sm:text-base leading-relaxed">
+                    <div class="animate-typewriter">欢迎来到深渊地牢，勇者！这是一个充满危险与机遇的地下迷宫。</div>
+                    <p>请先输入你的名字，开始你的冒险吧！</p>
+                </div>
+            </div>
+
+            <!-- 命令输入区域 -->
+            <div class="bg-dark/60 backdrop-blur-sm border border-primary/20 rounded-lg p-4">
+                <h2 class="text-lg font-bold text-primary mb-3 border-b border-primary/30 pb-2">
+                    <i class="fa fa-terminal mr-2"></i>命令输入
+                </h2>
+                <div class="flex">
+                    <input 
+                        type="text" 
+                        id="commandInput" 
+                        placeholder="输入命令 (例如: 向北走, 攻击, 查看物品...)" 
+                        class="flex-1 bg-dark/80 border border-primary/40 rounded-l-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                    >
+                    <button 
+                        id="submitCommand" 
+                        class="bg-primary hover:bg-primary/80 text-white px-4 py-2 rounded-r-lg transition-colors duration-200"
+                    >
+                        执行
+                    </button>
+                </div>
+                <p class="text-xs text-light/50 mt-2">输入 "帮助" 查看可用命令列表</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- 帮助模态框 -->
+    <div id="helpModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+        <div class="bg-dark border border-primary/30 rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold text-primary">游戏帮助</h2>
+                <button id="closeHelp" class="text-light/70 hover:text-danger text-xl">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <h3 class="text-xl font-bold text-secondary mb-2">移动命令</h3>
+                    <ul class="list-disc list-inside space-y-1 text-light/80">
+                        <li><code class="bg-dark/80 px-1 rounded">向北走</code> 或 <code class="bg-dark/80 px-1 rounded">上</code> - 向北移动</li>
+                        <li><code class="bg-dark/80 px-1 rounded">向南走</code> 或 <code class="bg-dark/80 px-1 rounded">下</code> - 向南移动</li>
+                        <li><code class="bg-dark/80 px-1 rounded">向东走</code> 或 <code class="bg-dark/80 px-1 rounded">右</code> - 向东移动</li>
+                        <li><code class="bg-dark/80 px-1 rounded">向西走</code> 或 <code class="bg-dark/80 px-1 rounded">左</code> - 向西移动</li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h3 class="text-xl font-bold text-secondary mb-2">战斗命令</h3>
+                    <ul class="list-disc list-inside space-y-1 text-light/80">
+                        <li><code class="bg-dark/80 px-1 rounded">攻击</code> - 攻击当前敌人</li>
+                        <li><code class="bg-dark/80 px-1 rounded">防御</code> - 进入防御状态，减少受到的伤害</li>
+                        <li><code class="bg-dark/80 px-1 rounded">逃跑</code> - 尝试逃离战斗</li>
+                        <li><code class="bg-dark/80 px-1 rounded">使用 [物品名]</code> - 使用指定物品</li>
+                        <li><code class="bg-dark/80 px-1 rounded">魔法 [魔法名]</code> - 使用指定魔法</li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h3 class="text-xl font-bold text-secondary mb-2">探索命令</h3>
+                    <ul class="list-disc list-inside space-y-1 text-light/80">
+                        <li><code class="bg-dark/80 px-1 rounded">查看</code> - 查看当前区域</li>
+                        <li><code class="bg-dark/80 px-1 rounded">搜索</code> - 搜索当前区域，可能发现物品</li>
+                        <li><code class="bg-dark/80 px-1 rounded">打开 [门/箱子]</code> - 打开指定物体</li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h3 class="text-xl font-bold text-secondary mb-2">物品命令</h3>
+                    <ul class="list-disc list-inside space-y-1 text-light/80">
+                        <li><code class="bg-dark/80 px-1 rounded">物品</code> 或 <code class="bg-dark/80 px-1 rounded">背包</code> - 查看物品栏</li>
+                        <li><code class="bg-dark/80 px-1 rounded">使用 [物品名]</code> - 使用指定物品</li>
+                        <li><code class="bg-dark/80 px-1 rounded">丢弃 [物品名]</code> - 丢弃指定物品</li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h3 class="text-xl font-bold text-secondary mb-2">其他命令</h3>
+                    <ul class="list-disc list-inside space-y-1 text-light/80">
+                        <li><code class="bg-dark/80 px-1 rounded">状态</code> - 查看角色状态</li>
+                        <li><code class="bg-dark/80 px-1 rounded">帮助</code> - 显示帮助信息</li>
+                        <li><code class="bg-dark/80 px-1 rounded">重置</code> - 重新开始游戏</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 游戏结束模态框 -->
+    <div id="gameOverModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+        <div class="bg-dark border border-danger/50 rounded-lg p-6 max-w-md w-full text-center">
+            <h2 id="gameOverTitle" class="text-3xl font-bold text-danger mb-4">游戏结束</h2>
+            <p id="gameOverMessage" class="text-lg mb-6">你已经英勇牺牲...</p>
+            <button id="restartGame" class="bg-primary hover:bg-primary/80 text-white px-6 py-3 rounded-lg transition-colors duration-200 text-lg">
+                重新开始
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // 游戏状态
+        const gameState = {
+            player: {
+                name: "勇者",
+                health: 100,
+                maxHealth: 100,
+                mana: 50,
+                maxMana: 50,
+                attack: 10,
+                defense: 5,
+                level: 1,
+                exp: 0,
+                expToNextLevel: 100,
+                inventory: []
+            },
+            map: {
+                currentX: 0,
+                currentY: 0,
+                visited: { "0,0": true },
+                rooms: {}
+            },
+            game: {
+                inCombat: false,
+                currentEnemy: null,
+                gameOver: false,
+                initialNameSet: false
+            }
+        };
+
+        // 物品数据库
+        const items = {
+            "治疗药水": {
+                type: "potion",
+                effect: { health: 30 },
+                description: "恢复30点生命值"
+            },
+            "强效治疗药水": {
+                type: "potion",
+                effect: { health: 60 },
+                description: "恢复60点生命值"
+            },
+            "魔法药水": {
+                type: "potion",
+                effect: { mana: 20 },
+                description: "恢复20点魔法值"
+            },
+            "铁剑": {
+                type: "weapon",
+                effect: { attack: 5 },
+                description: "增加5点攻击力"
+            },
+            "皮甲": {
+                type: "armor",
+                effect: { defense: 3 },
+                description: "增加3点防御力"
+            },
+            "金钥匙": {
+                type: "key",
+                effect: { unlock: "gold" },
+                description: "可以打开金色的门和箱子"
+            }
+        };
+
+        // 敌人数据库
+        const enemies = {
+            "哥布林": {
+                health: 30,
+                attack: 8,
+                defense: 2,
+                exp: 20,
+                description: "一种弱小但狡猾的生物，通常成群出没。"
+            },
+            "骷髅兵": {
+                health: 50,
+                attack: 10,
+                defense: 4,
+                exp: 35,
+                description: "被黑暗魔法唤醒的亡者，不知疼痛。"
+            },
+            "食人魔": {
+                health: 120,
+                attack: 15,
+                defense: 8,
+                exp: 80,
+                description: "巨大而愚蠢的怪物，有着惊人的力量。"
+            },
+            "巫师": {
+                health: 60,
+                attack: 18,
+                defense: 3,
+                exp: 70,
+                description: "掌握黑暗魔法的施法者，擅长远程攻击。"
+            },
+            "龙": {
+                health: 300,
+                attack: 25,
+                defense: 15,
+                exp: 300,
+                description: "传说中的生物，吐息能烧毁一切。"
+            }
+        };
+
+        // 房间类型
+        const roomTypes = [
+            { type: "普通房间", description: "一个普通的石砌房间，墙壁上有些苔藓。" },
+            { type: "宝库", description: "房间里堆满了箱子，似乎藏有宝物。", hasLoot: true },
+            { type: "祭坛", description: "中央有一个古老的祭坛，散发着神秘的气息。", hasLoot: true },
+            { type: "战斗竞技场", description: "这是一个圆形的房间，看起来像是为战斗准备的。", enemyEncounter: true },
+            { type: "图书馆", description: "书架上摆满了古老的书籍，有些已经腐烂。", hasLoot: true },
+            { type: "陷阱房", description: "地面上有一些不明显的痕迹，小心陷阱！", hasTrap: true },
+            { type: "走廊", description: "一条长长的走廊，通向未知的地方。" }
+        ];
+
+        // DOM 元素
+        const elements = {
+            gameLog: document.getElementById('gameLog'),
+            commandInput: document.getElementById('commandInput'),
+            submitCommand: document.getElementById('submitCommand'),
+            helpBtn: document.getElementById('helpBtn'),
+            closeHelp: document.getElementById('closeHelp'),
+            helpModal: document.getElementById('helpModal'),
+            resetBtn: document.getElementById('resetBtn'),
+            gameOverModal: document.getElementById('gameOverModal'),
+            gameOverTitle: document.getElementById('gameOverTitle'),
+            gameOverMessage: document.getElementById('gameOverMessage'),
+            restartGame: document.getElementById('restartGame'),
+            playerName: document.getElementById('playerName'),
+            playerHealth: document.getElementById('playerHealth'),
+            playerMana: document.getElementById('playerMana'),
+            playerAttack: document.getElementById('playerAttack'),
+            playerDefense: document.getElementById('playerDefense'),
+            playerLevel: document.getElementById('playerLevel'),
+            playerExp: document.getElementById('playerExp'),
+            inventory: document.getElementById('inventory'),
+            currentLocation: document.getElementById('currentLocation')
+        };
+
+        // 初始化游戏
+        function initGame() {
+            // 重置游戏状态
+            Object.assign(gameState, {
+                player: {
+                    name: "勇者",
+                    health: 100,
+                    maxHealth: 100,
+                    mana: 50,
+                    maxMana: 50,
+                    attack: 10,
+                    defense: 5,
+                    level: 1,
+                    exp: 0,
+                    expToNextLevel: 100,
+                    inventory: []
+                },
+                map: {
+                    currentX: 0,
+                    currentY: 0,
+                    visited: { "0,0": true },
+                    rooms: {}
+                },
+                game: {
+                    inCombat: false,
+                    currentEnemy: null,
+                    gameOver: false,
+                    initialNameSet: false
+                }
+            });
+
+            // 生成初始房间
+            generateRoom(0, 0);
+            
+            // 更新UI
+            updateUI();
+            
+            // 清空日志
+            elements.gameLog.innerHTML = `
+                <div class="animate-typewriter">欢迎来到深渊地牢，勇者！这是一个充满危险与机遇的地下迷宫。</div>
+                <p>请先输入你的名字，开始你的冒险吧！</p>
+            `;
+            
+            // 隐藏模态框
+            elements.helpModal.classList.add('hidden');
+            elements.gameOverModal.classList.add('hidden');
+            
+            // 聚焦输入框
+            elements.commandInput.focus();
+        }
+
+        // 生成房间
+        function generateRoom(x, y) {
+            const key = `${x},${y}`;
+            
+            // 如果房间已存在，直接返回
+            if (gameState.map.rooms[key]) return gameState.map.rooms[key];
+            
+            // 随机选择房间类型
+            const roomType = roomTypes[Math.floor(Math.random() * roomTypes.length)];
+            
+            // 生成房间数据
+            const room = {
+                type: roomType.type,
+                description: roomType.description,
+                exits: generateExits(x, y),
+                hasLoot: roomType.hasLoot && Math.random() > 0.3, // 70% 几率有 loot
+                enemyEncounter: roomType.enemyEncounter && Math.random() > 0.4, // 60% 几率遇敌
+                hasTrap: roomType.hasTrap && Math.random() > 0.5, // 50% 几率有陷阱
+                explored: false
+            };
+            
+            // 存储房间
+            gameState.map.rooms[key] = room;
+            return room;
+        }
+
+        // 生成出口
+        function generateExits(x, y) {
+            const exits = [];
+            const directions = ['north', 'south', 'east', 'west'];
+            
+            // 至少有一个出口，最多4个
+            const exitCount = Math.floor(Math.random() * 3) + 1;
+            
+            // 随机选择出口方向
+            while (exits.length < exitCount) {
+                const dir = directions[Math.floor(Math.random() * directions.length)];
+                if (!exits.includes(dir)) {
+                    exits.push(dir);
+                }
+            }
+            
+            return exits;
+        }
+
+        // 移动角色
+        function move(direction) {
+            let newX = gameState.map.currentX;
+            let newY = gameState.map.currentY;
+            
+            // 根据方向计算新坐标
+            switch(direction) {
+                case 'north':
+                    newY -= 1;
+                    break;
+                case 'south':
+                    newY += 1;
+                    break;
+                case 'east':
+                    newX += 1;
+                    break;
+                case 'west':
+                    newX -= 1;
+                    break;
+                default:
+                    return { success: false, message: "无效的方向" };
+            }
+            
+            // 检查当前房间是否有该方向的出口
+            const currentRoomKey = `${gameState.map.currentX},${gameState.map.currentY}`;
+            const currentRoom = gameState.map.rooms[currentRoomKey];
+            
+            if (!currentRoom.exits.includes(direction)) {
+                return { success: false, message: `这个方向没有出口！` };
+            }
+            
+            // 生成新房间
+            const newRoomKey = `${newX},${newY}`;
+            generateRoom(newX, newY);
+            
+            // 更新玩家位置
+            gameState.map.currentX = newX;
+            gameState.map.currentY = newY;
+            gameState.map.visited[newRoomKey] = true;
+            
+            // 检查新房间
+            const newRoom = gameState.map.rooms[newRoomKey];
+            const messages = [`你向${getDirectionName(direction)}移动。`];
+            
+            // 标记房间为已探索
+            newRoom.explored = true;
+            
+            // 检查陷阱
+            if (newRoom.hasTrap) {
+                const damage = Math.floor(Math.random() * 15) + 5;
+                gameState.player.health = Math.max(0, gameState.player.health - damage);
+                messages.push(`<span class="text-danger">你触发了一个陷阱！受到了${damage}点伤害！</span>`);
+                
+                // 检查死亡
+                if (gameState.player.health <= 0) {
+                    gameOver("你触发了致命陷阱，不幸身亡。");
+                    return { success: true, messages };
+                }
+            }
+            
+            // 描述新房间
+            messages.push(`你来到了一个${newRoom.type}。${newRoom.description}`);
+            
+            // 显示出口
+            if (newRoom.exits.length > 0) {
+                const exitNames = newRoom.exits.map(getDirectionName).join('、');
+                messages.push(`这里有通往${exitNames}的出口。`);
+            }
+            
+            // 随机遇敌
+            if (newRoom.enemyEncounter || Math.random() < 0.2) {
+                startCombat();
+                messages.push(`<span class="text-secondary">突然，一个敌人出现了！</span>`);
+            } 
+            // 检查是否有战利品
+            else if (newRoom.hasLoot && !newRoom.looted) {
+                messages.push("你发现了一些物品！使用 '搜索' 命令来获取它们。");
+            }
+            
+            return { success: true, messages };
+        }
+
+        // 获取方向的中文名称
+        function getDirectionName(direction) {
+            const dirNames = {
+                'north': '北方',
+                'south': '南方',
+                'east': '东方',
+                'west': '西方'
+            };
+            return dirNames[direction] || direction;
+        }
+
+        // 开始战斗
+        function startCombat() {
+            // 随机选择敌人
+            const enemyNames = Object.keys(enemies);
+            const enemyName = enemyNames[Math.floor(Math.random() * enemyNames.length)];
+            const enemyData = enemies[enemyName];
+            
+            // 设置战斗状态
+            gameState.game.inCombat = true;
+            gameState.game.currentEnemy = {
+                name: enemyName,
+                health: enemyData.health,
+                maxHealth: enemyData.health,
+                attack: enemyData.attack,
+                defense: enemyData.defense,
+                exp: enemyData.exp,
+                description: enemyData.description
+            };
+            
+            addToLog(`<span class="text-secondary font-bold">你遭遇了${enemyName}！</span>`);
+            addToLog(`${enemyName}：${enemyData.description}`);
+            addToLog(`生命值: ${enemyData.health}/${enemyData.health} 攻击力: ${enemyData.attack} 防御力: ${enemyData.defense}`);
+            addToLog("你要做什么？(攻击/防御/逃跑/使用物品)");
+        }
+
+        // 玩家攻击
+        function playerAttack() {
+            if (!gameState.game.inCombat || !gameState.game.currentEnemy) {
+                return { success: false, message: "你现在不在战斗中！" };
+            }
+            
+            const enemy = gameState.game.currentEnemy;
+            // 计算伤害 (攻击力 - 敌人防御力，至少1点伤害)
+            let damage = Math.max(1, gameState.player.attack - enemy.defense / 2);
+            
+            // 有几率暴击
+            const critChance = 0.1; // 10% 暴击几率
+            if (Math.random() < critChance) {
+                damage *= 2;
+                enemy.health = Math.max(0, enemy.health - damage);
+                return { 
+                    success: true, 
+                    messages: [`<span class="text-accent">暴击！</span> 你对${enemy.name}造成了${damage}点伤害！`] 
+                };
+            }
+            
+            enemy.health = Math.max(0, enemy.health - damage);
+            return { 
+                success: true, 
+                messages: [`你对${enemy.name}造成了${damage}点伤害！`] 
+            };
+        }
+
+        // 敌人攻击
+        function enemyAttack() {
+            if (!gameState.game.inCombat || !gameState.game.currentEnemy) return;
+            
+            const enemy = gameState.game.currentEnemy;
+            // 计算伤害 (敌人攻击力 - 玩家防御力/2，至少1点伤害)
+            let damage = Math.max(1, enemy.attack - gameState.player.defense / 2);
+            
+            gameState.player.health = Math.max(0, gameState.player.health - damage);
+            
+            addToLog(`<span class="text-danger">${enemy.name}对你造成了${damage}点伤害！</span>`);
+            
+            // 检查玩家是否死亡
+            if (gameState.player.health <= 0) {
+                gameOver(`你被${enemy.name}击败了！`);
+            }
+        }
+
+        // 防御
+        function defend() {
+            if (!gameState.game.inCombat) {
+                return { success: false, message: "你现在不在战斗中！" };
+            }
+            
+            // 临时增加防御力
+            gameState.player.tempDefense = 5;
+            return { success: true, messages: ["你进入了防御姿态，受到的伤害将减少！"] };
+        }
+
+        // 尝试逃跑
+        function flee() {
+            if (!gameState.game.inCombat) {
+                return { success: false, message: "你现在不在战斗中！" };
+            }
+            
+            // 逃跑成功率
+            const fleeChance = 0.5; // 50% 成功率
+            
+            if (Math.random() < fleeChance) {
+                // 逃跑成功
+                gameState.game.inCombat = false;
+                gameState.game.currentEnemy = null;
+                return { success: true, messages: ["你成功逃脱了！"] };
+            } else {
+                // 逃跑失败，敌人反击
+                return { 
+                    success: true, 
+                    messages: ["逃跑失败！敌人抓住了机会攻击你！"],
+                    enemyAttack: true
+                };
+            }
+        }
+
+        // 检查战斗结果
+        function checkCombatResult() {
+            if (!gameState.game.inCombat || !gameState.game.currentEnemy) return false;
+            
+            if (gameState.game.currentEnemy.health <= 0) {
+                // 敌人被击败
+                const enemy = gameState.game.currentEnemy;
+                addToLog(`<span class="text-success">你击败了${enemy.name}！</span>`);
+                
+                // 获得经验
+                gainExperience(enemy.exp);
+                
+                // 有几率获得物品
+                if (Math.random() < 0.4) { // 40% 几率掉落物品
+                    const itemNames = Object.keys(items);
+                    const randomItem = itemNames[Math.floor(Math.random() * itemNames.length)];
+                    addItem(randomItem);
+                    addToLog(`你从${enemy.name}的尸体上找到了${randomItem}！`);
+                }
+                
+                // 结束战斗
+                gameState.game.inCombat = false;
+                gameState.game.currentEnemy = null;
+                return true;
+            }
+            
+            return false;
+        }
+
+        // 搜索房间
+        function searchRoom() {
+            const currentRoomKey = `${gameState.map.currentX},${gameState.map.currentY}`;
+            const currentRoom = gameState.map.rooms[currentRoomKey];
+            
+            if (currentRoom.searched) {
+                return { success: true, messages: ["你已经搜索过这个房间了，没有发现新的东西。"] };
+            }
+            
+            currentRoom.searched = true;
+            
+            // 50% 几率发现物品
+            if (currentRoom.hasLoot && !currentRoom.looted) {
+                currentRoom.looted = true;
+                const itemNames = Object.keys(items);
+                const randomItem = itemNames[Math.floor(Math.random() * itemNames.length)];
+                addItem(randomItem);
+                return { 
+                    success: true, 
+                    messages: [
+                        "你仔细搜索了房间...",
+                        `你找到了${randomItem}！`
+                    ] 
+                };
+            } else if (Math.random() < 0.3) { // 30% 几率发现隐藏的敌人
+                startCombat();
+                return { 
+                    success: true, 
+                    messages: [
+                        "你仔细搜索了房间...",
+                        "<span class='text-secondary'>你惊动了一个隐藏的敌人！</span>"
+                    ] 
+                };
+            } else {
+                return { 
+                    success: true, 
+                    messages: [
+                        "你仔细搜索了房间...",
+                        "但没有发现什么有用的东西。"
+                    ] 
+                };
+            }
+        }
+
+        // 添加物品到 inventory
+        function addItem(itemName) {
+            if (!items[itemName]) return false;
+            
+            gameState.player.inventory.push(itemName);
+            updateInventory();
+            return true;
+        }
+
+        // 使用物品
+        function useItem(itemName) {
+            const itemIndex = gameState.player.inventory.indexOf(itemName);
+            if (itemIndex === -1) {
+                return { success: false, message: `你没有${itemName}！` };
+            }
+            
+            const item = items[itemName];
+            if (!item) {
+                return { success: false, message: `未知物品: ${itemName}` };
+            }
+            
+            // 处理物品效果
+            const messages = [`你使用了${itemName}。`];
+            
+            if (item.type === "potion") {
+                // 药水效果
+                if (item.effect.health) {
+                    gameState.player.health = Math.min(
+                        gameState.player.maxHealth, 
+                        gameState.player.health + item.effect.health
+                    );
+                    messages.push(`恢复了${item.effect.health}点生命值！`);
+                }
+                
+                if (item.effect.mana) {
+                    gameState.player.mana = Math.min(
+                        gameState.player.maxMana, 
+                        gameState.player.mana + item.effect.mana
+                    );
+                    messages.push(`恢复了${item.effect.mana}点魔法值！`);
+                }
+            } 
+            else if (item.type === "weapon") {
+                // 武器效果
+                gameState.player.attack += item.effect.attack;
+                messages.push(`你的攻击力增加了${item.effect.attack}点！`);
+            }
+            else if (item.type === "armor") {
+                // 防具效果
+                gameState.player.defense += item.effect.defense;
+                messages.push(`你的防御力增加了${item.effect.defense}点！`);
+            }
+            else if (item.type === "key") {
+                // 钥匙效果
+                messages.push(`这是一把${itemName}，可以打开对应的门和箱子。`);
+            }
+            
+            // 从物品栏移除物品
+            gameState.player.inventory.splice(itemIndex, 1);
+            updateInventory();
+            
+            return { success: true, messages };
+        }
+
+        // 丢弃物品
+        function dropItem(itemName) {
+            const itemIndex = gameState.player.inventory.indexOf(itemName);
+            if (itemIndex === -1) {
+                return { success: false, message: `你没有${itemName}！` };
+            }
+            
+            // 从物品栏移除物品
+            gameState.player.inventory.splice(itemIndex, 1);
+            updateInventory();
+            
+            return { success: true, messages: [`你丢弃了${itemName}。`] };
+        }
+
+        // 获得经验
+        function gainExperience(amount) {
+            gameState.player.exp += amount;
+            addToLog(`你获得了${amount}点经验值！`);
+            
+            // 检查是否升级
+            while (gameState.player.exp >= gameState.player.expToNextLevel) {
+                levelUp();
+            }
+            
+            updatePlayerExp();
+        }
+
+        // 升级
+        function levelUp() {
+            // 扣除升级所需经验
+            gameState.player.exp -= gameState.player.expToNextLevel;
+            
+            // 提升等级
+            gameState.player.level += 1;
+            
+            // 提升属性
+            gameState.player.maxHealth += 20;
+            gameState.player.health = gameState.player.maxHealth;
+            
+            gameState.player.maxMana += 10;
+            gameState.player.mana = gameState.player.maxMana;
+            
+            gameState.player.attack += 3;
+            gameState.player.defense += 2;
+            
+            // 计算下一级所需经验
+            gameState.player.expToNextLevel = Math.floor(gameState.player.expToNextLevel * 1.5);
+            
+            addToLog(`<span class="text-accent font-bold">恭喜！你升级到了${gameState.player.level}级！</span>`);
+            addToLog(`属性提升: 生命值+20, 魔法值+10, 攻击力+3, 防御力+2`);
+            
+            // 更新UI
+            updatePlayerStats();
+        }
+
+        // 游戏结束
+        function gameOver(message) {
+            gameState.game.gameOver = true;
+            gameState.game.inCombat = false;
+            
+            elements.gameOverTitle.textContent = "游戏结束";
+            elements.gameOverMessage.textContent = message;
+            elements.gameOverModal.classList.remove('hidden');
+            
+            addToLog(`<span class="text-danger font-bold text-xl">${message}</span>`);
+            addToLog("输入 '重置' 或点击重置按钮重新开始游戏。");
+        }
+
+        // 解析命令
+        function parseCommand(command) {
+            command = command.trim().toLowerCase();
+            
+            // 如果还没设置名字
+            if (!gameState.game.initialNameSet) {
+                gameState.player.name = command;
+                gameState.game.initialNameSet = true;
+                elements.playerName.textContent = command;
+                
+                const currentRoom = gameState.map.rooms[`${gameState.map.currentX},${gameState.map.currentY}`];
+                return {
+                    success: true,
+                    messages: [
+                        `欢迎你，${command}！`,
+                        `你现在身处一个${currentRoom.type}。${currentRoom.description}`,
+                        `可以输入 '帮助' 查看可用命令，开始你的冒险吧！`
+                    ]
+                };
+            }
+            
+            // 如果游戏结束
+            if (gameState.game.gameOver) {
+                if (command === '重置' || command === '重新开始') {
+                    initGame();
+                    return null; // 不需要添加消息，initGame 已经处理
+                }
+                return { success: false, message: "游戏已结束，请输入 '重置' 重新开始。" };
+            }
+            
+            // 移动命令
+            if (command.includes('北') || command === '上') {
+                return move('north');
+            } else if (command.includes('南') || command === '下') {
+                return move('south');
+            } else if (command.includes('东') || command === '右') {
+                return move('east');
+            } else if (command.includes('西') || command === '左') {
+                return move('west');
+            }
+            
+            // 战斗命令
+            if (command === '攻击' || command === '打' || command === '砍') {
+                if (!gameState.game.inCombat) {
+                    return { success: false, message: "这里没有敌人可以攻击！" };
+                }
+                
+                const result = playerAttack();
+                if (result.success) {
+                    // 检查战斗是否结束
+                    if (!checkCombatResult()) {
+                        // 敌人反击
+                        setTimeout(() => {
+                            enemyAttack();
+                        }, 800);
+                    }
+                }
+                return result;
+            } else if (command === '防御' || command === '守') {
+                const result = defend();
+                if (result.success) {
+                    // 敌人攻击
+                    setTimeout(() => {
+                        enemyAttack();
+                        // 移除临时防御
+                        gameState.player.tempDefense = 0;
+                    }, 800);
+                }
+                return result;
+            } else if (command === '逃跑' || command === '逃') {
+                const result = flee();
+                if (result.success && result.enemyAttack) {
+                    // 敌人攻击
+                    setTimeout(() => {
+                        enemyAttack();
+                    }, 800);
+                }
+                return result;
+            }
+            
+            // 物品命令
+            if (command === '物品' || command === '背包' || command === '查看物品') {
+                if (gameState.player.inventory.length === 0) {
+                    return { success: true, messages: ["你的物品栏是空的。"] };
+                }
+                
+                const itemsList = gameState.player.inventory.join('、');
+                return { success: true, messages: [`你的物品：${itemsList}`] };
+            } else if (command.startsWith('使用')) {
+                const itemName = command.replace('使用', '').trim();
+                return useItem(itemName);
+            } else if (command.startsWith('丢弃')) {
+                const itemName = command.replace('丢弃', '').trim();
+                return dropItem(itemName);
+            }
+            
+            // 探索命令
+            if (command === '查看' || command === 'look') {
+                const currentRoomKey = `${gameState.map.currentX},${gameState.map.currentY}`;
+                const currentRoom = gameState.map.rooms[currentRoomKey];
+                
+                const messages = [
+                    `你在一个${currentRoom.type}。${currentRoom.description}`,
+                ];
+                
+                // 显示出口
+                if (currentRoom.exits.length > 0) {
+                    const exitNames = currentRoom.exits.map(getDirectionName).join('、');
+                    messages.push(`这里有通往${exitNames}的出口。`);
+                }
+                
+                // 如果在战斗中，显示敌人信息
+                if (gameState.game.inCombat && gameState.game.currentEnemy) {
+                    const enemy = gameState.game.currentEnemy;
+                    messages.push(`<span class="text-secondary">你正在与${enemy.name}战斗！</span>`);
+                    messages.push(`${enemy.name} 生命值: ${enemy.health}/${enemy.maxHealth}`);
+                }
+                
+                return { success: true, messages };
+            } else if (command === '搜索' || command === '找' || command === '探索') {
+                return searchRoom();
+            } else if (command.startsWith('打开')) {
+                const target = command.replace('打开', '').trim();
+                if (!target) {
+                    return { success: false, message: "请指定要打开的东西，例如：打开箱子" };
+                }
+                
+                // 50% 几率成功打开并获得物品
+                if (Math.random() < 0.5) {
+                    const itemNames = Object.keys(items);
+                    const randomItem = itemNames[Math.floor(Math.random() * itemNames.length)];
+                    addItem(randomItem);
+                    return { 
+                        success: true, 
+                        messages: [
+                            `你打开了${target}。`,
+                            `你在${target}里找到了${randomItem}！`
+                        ] 
+                    };
+                } else {
+                    // 打开失败，可能有陷阱或被锁住
+                    if (Math.random() < 0.3) {
+                        const damage = Math.floor(Math.random() * 10) + 3;
+                        gameState.player.health = Math.max(0, gameState.player.health - damage);
+                        const messages = [`<span class="text-danger">${target}里有陷阱！你受到了${damage}点伤害！</span>`];
+                        
+                        // 检查死亡
+                        if (gameState.player.health <= 0) {
+                            gameOver("你触发了致命陷阱，不幸身亡。");
+                        }
+                        return { success: true, messages };
+                    } else {
+                        return { 
+                            success: true, 
+                            messages: [`${target}被锁住了，你需要找到钥匙才能打开它。`] 
+                        };
+                    }
+                }
+            }
+            
+            // 其他命令
+            if (command === '状态' || command === '属性') {
+                const messages = [
+                    `姓名: ${gameState.player.name}`,
+                    `等级: ${gameState.player.level}`,
+                    `生命值: ${gameState.player.health}/${gameState.player.maxHealth}`,
+                    `魔法值: ${gameState.player.mana}/${gameState.player.maxMana}`,
+                    `攻击力: ${gameState.player.attack}`,
+                    `防御力: ${gameState.player.defense}`,
+                    `经验值: ${gameState.player.exp}/${gameState.player.expToNextLevel}`
+                ];
+                return { success: true, messages };
+            } else if (command === '帮助' || command === '?') {
+                elements.helpModal.classList.remove('hidden');
+                return { success: true, messages: ["已显示帮助信息。"] };
+            } else if (command === '重置' || command === '重新开始') {
+                initGame();
+                return null; // 不需要添加消息，initGame 已经处理
+            }
+            
+            // 未知命令
+            return { success: false, message: `未知命令: "${command}"。输入 "帮助" 查看可用命令。` };
+        }
+
+        // 添加消息到日志
+        function addToLog(message) {
+            const logEntry = document.createElement('p');
+            logEntry.innerHTML = message;
+            elements.gameLog.appendChild(logEntry);
+            elements.gameLog.scrollTop = elements.gameLog.scrollHeight;
+        }
+
+        // 更新玩家状态UI
+        function updatePlayerStats() {
+            elements.playerName.textContent = gameState.player.name;
+            elements.playerHealth.textContent = `${gameState.player.health}/${gameState.player.maxHealth}`;
+            elements.playerMana.textContent = `${gameState.player.mana}/${gameState.player.maxMana}`;
+            elements.playerAttack.textContent = gameState.player.attack;
+            elements.playerDefense.textContent = gameState.player.defense;
+            elements.playerLevel.textContent = gameState.player.level;
+            updatePlayerExp();
+            
+            // 健康状态颜色变化
+            if (gameState.player.health < 30) {
+                elements.playerHealth.classList.add('text-danger');
+                elements.playerHealth.classList.remove('text-success');
+            } else {
+                elements.playerHealth.classList.remove('text-danger');
+                elements.playerHealth.classList.add('text-success');
+            }
+        }
+
+        // 更新玩家经验UI
+        function updatePlayerExp() {
+            elements.playerExp.textContent = `${gameState.player.exp}/${gameState.player.expToNextLevel}`;
+        }
+
+        // 更新物品栏UI
+        function updateInventory() {
+            if (gameState.player.inventory.length === 0) {
+                elements.inventory.innerHTML = '<p class="text-light/50 italic">暂无物品</p>';
+                return;
+            }
+            
+            let inventoryHtml = '';
+            gameState.player.inventory.forEach(item => {
+                inventoryHtml += `<div class="flex justify-between items-center py-1 border-b border-primary/10 last:border-0">
+                    <span>${item}</span>
+                    <span class="text-xs text-light/60">${items[item]?.description || ''}</span>
+                </div>`;
+            });
+            
+            elements.inventory.innerHTML = inventoryHtml;
+        }
+
+        // 更新当前位置UI
+        function updateCurrentLocation() {
+            const currentRoomKey = `${gameState.map.currentX},${gameState.map.currentY}`;
+            const currentRoom = gameState.map.rooms[currentRoomKey];
+            elements.currentLocation.innerHTML = `<p>${currentRoom.type}</p>
+                <p class="text-sm text-light/70">坐标: (${gameState.map.currentX}, ${gameState.map.currentY})</p>`;
+        }
+
+        // 更新整个UI
+        function updateUI() {
+            updatePlayerStats();
+            updateInventory();
+            updateCurrentLocation();
+        }
+
+        // 处理命令提交
+        function handleCommandSubmit() {
+            const command = elements.commandInput.value;
+            if (!command.trim()) return;
+            
+            // 清空输入框
+            elements.commandInput.value = '';
+            
+            // 添加命令到日志
+            addToLog(`<span class="text-primary">> ${command}</span>`);
+            
+            // 解析并执行命令
+            const result = parseCommand(command);
+            if (result === null) return; // 特殊情况，如重置游戏
+            
+            // 显示结果
+            if (result.success) {
+                if (Array.isArray(result.messages)) {
+                    result.messages.forEach(msg => addToLog(msg));
+                } else {
+                    addToLog(result.messages);
+                }
+            } else {
+                addToLog(`<span class="text-danger">${result.message}</span>`);
+            }
+            
+            // 更新UI
+            updateUI();
+        }
+
+        // 事件监听
+        elements.submitCommand.addEventListener('click', handleCommandSubmit);
+        
+        elements.commandInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                handleCommandSubmit();
+            }
+        });
+        
+        elements.helpBtn.addEventListener('click', () => {
+            elements.helpModal.classList.remove('hidden');
+        });
+        
+        elements.closeHelp.addEventListener('click', () => {
+            elements.helpModal.classList.add('hidden');
+        });
+        
+        elements.resetBtn.addEventListener('click', initGame);
+        
+        elements.restartGame.addEventListener('click', initGame);
+        
+        // 点击模态框背景关闭
+        elements.helpModal.addEventListener('click', (e) => {
+            if (e.target === elements.helpModal) {
+                elements.helpModal.classList.add('hidden');
+            }
+        });
+        
+        elements.gameOverModal.addEventListener('click', (e) => {
+            if (e.target === elements.gameOverModal) {
+                elements.gameOverModal.classList.add('hidden');
+            }
+        });
+
+        // 初始化游戏
+        initGame();
+    </script>
+</body>
+</html>

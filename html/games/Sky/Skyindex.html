@@ -1,0 +1,87 @@
+<html lang="zh-CN"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>光遇工具</title>
+    <style>
+        /* 基础样式重置 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        /* 页面整体居中 */
+        body {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f0f2f5;
+            padding: 20px;
+        }
+        
+        /* 文本框容器 - 竖行排列 */
+        .textbox-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
+            max-width: 500px;
+        }
+        
+        /* 文本框样式 */
+        .textbox {
+            background-color: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            font-family: 'Arial', sans-serif;
+            font-size: 18px;
+            color: #333;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            text-align: center; /* 新增文本居中属性 */
+        }
+        
+        /* 链接样式 */
+        .textbox a {
+            text-decoration: none;
+            color: #1a73e8;
+            font-weight: 500;
+        }
+        
+        .textbox a:hover {
+            text-decoration: underline;
+        }
+        
+        /* 悬停效果 */
+        .textbox:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+        }
+    </style>
+</head>
+<body>
+    <div class="textbox-container">
+        <!-- 第一个文本框 - 包含链接 -->
+        <div class="textbox">
+            <a href="光遇每日任务.html">每日任务查询</a>
+        </div>
+        
+        <!-- 其他文本框 -->
+        <div class="textbox">
+            <a href="光遇每日大蜡烛.html">每日大蜡烛查询</a>
+        </div>
+                <div class="textbox">
+            <a href="光遇每日季节蜡烛.html">每日季节蜡烛查询</a>
+        </div>
+         <div class="textbox">
+            <a href="光遇每日免费魔法.html">光遇每日免费魔法查询</a>
+        </div>
+     <div class="textbox">
+            <a href="光遇季节信息.html">光遇季节信息查询</a>
+        </div>
+        <div class="textbox">暂未添加</div>
+    </div>
+
+
+</body></html>

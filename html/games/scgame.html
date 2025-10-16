@@ -1,0 +1,1823 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>末日生存 - 文字冒险</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#e63946',
+                        secondary: '#457b9d',
+                        dark: '#1d3557',
+                        light: '#f1faee',
+                        accent: '#a8dadc',
+                        danger: '#e63946',
+                        success: '#1d3557',
+                        warning: '#f1faee',
+                    },
+                    fontFamily: {
+                        game: ['Courier New', 'monospace'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .text-shadow {
+                text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            }
+            .bg-noise {
+                background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+                background-blend-mode: overlay;
+                background-size: 200px;
+            }
+            .pulse-slow {
+                animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            }
+            .fade-in {
+                animation: fadeIn 0.5s ease-in-out;
+            }
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            .slide-in {
+                animation: slideIn 0.3s ease-out;
+            }
+            @keyframes slideIn {
+                from { transform: translateY(20px); opacity: 0; }
+                to { transform: translateY(0); opacity: 1; }
+            }
+        }
+    </style>
+</head>
+<body class="bg-dark text-light font-game min-h-screen flex flex-col bg-noise">
+    <!-- 状态栏 -->
+    <header class="bg-dark/80 backdrop-blur-sm border-b border-secondary/30 py-2 px-4 flex justify-between items-center">
+        <div class="flex items-center space-x-4">
+            <div class="flex items-center">
+                <i class="fa fa-heart text-primary mr-1"></i>
+                <span id="health" class="font-bold">100</span>
+            </div>
+            <div class="flex items-center">
+                <i class="fa fa-cutlery text-warning mr-1"></i>
+                <span id="hunger" class="font-bold">100</span>
+            </div>
+            <div class="flex items-center">
+                <i class="fa fa-tint text-secondary mr-1"></i>
+                <span id="thirst" class="font-bold">100</span>
+            </div>
+            <div class="flex items-center">
+                <i class="fa fa-bed text-accent mr-1"></i>
+                <span id="energy" class="font-bold">100</span>
+            </div>
+        </div>
+        <div>
+            <span id="location" class="font-bold">庇护所</span>
+        </div>
+    </header>
+
+    <!-- 主游戏区域 -->
+    <main class="flex-grow overflow-auto p-4 relative">
+        <!-- 游戏消息区域 -->
+        <div id="game-messages" class="mb-6 p-4 bg-dark/60 border border-secondary/30 rounded-lg h-48 md:h-64 overflow-y-auto slide-in">
+            <p class="mb-2">欢迎来到末日世界！这里危机四伏，但也充满机遇。</p>
+            <p>你现在处于自己的庇护所中，这是你在这个末日里的安全屋。</p>
+        </div>
+
+        <!-- 地点信息 -->
+        <div id="location-info" class="mb-6 p-4 bg-dark/60 border border-secondary/30 rounded-lg slide-in">
+            <h2 class="text-xl font-bold mb-2 text-primary">庇护所</h2>
+            <p>你的安全屋，可以在这里休息、建造和储存物资。周围有森林、矿脉和灌木丛。</p>
+            <div id="structures" class="mt-3">
+                <p class="text-sm text-accent">已建造: 无</p>
+            </div>
+        </div>
+
+        <!-- 行动按钮区域 -->
+        <div id="action-buttons" class="grid grid-cols-2 md:grid-cols-4 gap-3 slide-in">
+            <button id="btn-explore" class="flex flex-col items-center justify-center p-3 bg-secondary/20 hover:bg-secondary/40 border border-secondary/50 rounded-lg transition-all">
+                <i class="fa fa-map-o text-2xl mb-1"></i>
+                <span>探索</span>
+            </button>
+            <button id="btn-backpack" class="flex flex-col items-center justify-center p-3 bg-secondary/20 hover:bg-secondary/40 border border-secondary/50 rounded-lg transition-all">
+                <i class="fa fa-briefcase text-2xl mb-1"></i>
+                <span>背包</span>
+            </button>
+            <button id="btn-eat" class="flex flex-col items-center justify-center p-3 bg-secondary/20 hover:bg-secondary/40 border border-secondary/50 rounded-lg transition-all">
+                <i class="fa fa-cutlery text-2xl mb-1"></i>
+                <span>进食</span>
+            </button>
+            <button id="btn-drink" class="flex flex-col items-center justify-center p-3 bg-secondary/20 hover:bg-secondary/40 border border-secondary/50 rounded-lg transition-all">
+                <i class="fa fa-tint text-2xl mb-1"></i>
+                <span>饮水</span>
+            </button>
+            <button id="btn-rest" class="flex flex-col items-center justify-center p-3 bg-secondary/20 hover:bg-secondary/40 border border-secondary/50 rounded-lg transition-all">
+                <i class="fa fa-bed text-2xl mb-1"></i>
+                <span>休息</span>
+            </button>
+            <button id="btn-craft" class="flex flex-col items-center justify-center p-3 bg-secondary/20 hover:bg-secondary/40 border border-secondary/50 rounded-lg transition-all">
+                <i class="fa fa-cogs text-2xl mb-1"></i>
+                <span>合成</span>
+            </button>
+            <button id="btn-build" class="flex flex-col items-center justify-center p-3 bg-secondary/20 hover:bg-secondary/40 border border-secondary/50 rounded-lg transition-all">
+                <i class="fa fa-hammer text-2xl mb-1"></i>
+                <span>建造</span>
+            </button>
+            <button id="btn-storage" class="flex flex-col items-center justify-center p-3 bg-secondary/20 hover:bg-secondary/40 border border-secondary/50 rounded-lg transition-all">
+                <i class="fa fa-archive text-2xl mb-1"></i>
+                <span>仓库</span>
+            </button>
+        </div>
+
+        <!-- 区域资源点 -->
+        <div id="resource-points" class="mt-6 slide-in">
+            <h3 class="text-lg font-bold mb-3 text-accent">周围可探索资源点</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <button class="resource-btn p-3 bg-secondary/20 hover:bg-secondary/40 border border-secondary/50 rounded-lg transition-all text-left" data-resource="forest">
+                    <i class="fa fa-tree text-green-500 mr-2"></i>
+                    <span>森林 - 需要斧子</span>
+                </button>
+                <button class="resource-btn p-3 bg-secondary/20 hover:bg-secondary/40 border border-secondary/50 rounded-lg transition-all text-left" data-resource="mine">
+                    <i class="fa fa-cube text-yellow-600 mr-2"></i>
+                    <span>矿脉 - 需要镐子</span>
+                </button>
+                <button class="resource-btn p-3 bg-secondary/20 hover:bg-secondary/40 border border-secondary/50 rounded-lg transition-all text-left" data-resource="bush">
+                    <i class="fa fa-leaf text-green-600 mr-2"></i>
+                    <span>灌木丛</span>
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- 所有模态窗口 -->
+    <!-- 背包窗口 -->
+    <div id="backpack-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden fade-in">
+        <div class="bg-dark border border-secondary w-full max-w-2xl max-h-[90vh] flex flex-col">
+            <div class="p-4 border-b border-secondary flex justify-between items-center">
+                <h2 class="text-xl font-bold text-primary">背包</h2>
+                <div class="flex space-x-2">
+                    <button id="btn-batch-store" class="px-3 py-1 bg-secondary hover:bg-secondary/80 rounded transition-all">
+                        <i class="fa fa-archive mr-1"></i>批量存储
+                    </button>
+                    <button class="close-modal p-2 hover:bg-secondary/30 rounded">
+                        <i class="fa fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="flex-grow p-4 overflow-y-auto">
+                <div id="backpack-items" class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <!-- 背包物品会动态添加 -->
+                    <div class="text-center text-gray-400 py-8">背包是空的</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 仓库窗口 -->
+    <div id="storage-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden fade-in">
+        <div class="bg-dark border border-secondary w-full max-w-2xl max-h-[90vh] flex flex-col">
+            <div class="p-4 border-b border-secondary flex justify-between items-center">
+                <h2 class="text-xl font-bold text-primary">仓库</h2>
+                <button class="close-modal p-2 hover:bg-secondary/30 rounded">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div class="flex-grow p-4 overflow-y-auto">
+                <div id="storage-items" class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <!-- 仓库物品会动态添加 -->
+                    <div class="text-center text-gray-400 py-8">仓库是空的</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 进食窗口 -->
+    <div id="eat-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden fade-in">
+        <div class="bg-dark border border-secondary w-full max-w-md max-h-[90vh] flex flex-col">
+            <div class="p-4 border-b border-secondary flex justify-between items-center">
+                <h2 class="text-xl font-bold text-primary">选择食物</h2>
+                <button class="close-modal p-2 hover:bg-secondary/30 rounded">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div class="flex-grow p-4 overflow-y-auto">
+                <div id="food-items" class="space-y-2">
+                    <!-- 食物物品会动态添加 -->
+                    <div class="text-center text-gray-400 py-8">没有可食用的物品</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 饮水窗口 -->
+    <div id="drink-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden fade-in">
+        <div class="bg-dark border border-secondary w-full max-w-md max-h-[90vh] flex flex-col">
+            <div class="p-4 border-b border-secondary flex justify-between items-center">
+                <h2 class="text-xl font-bold text-primary">选择饮品</h2>
+                <button class="close-modal p-2 hover:bg-secondary/30 rounded">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div class="flex-grow p-4 overflow-y-auto">
+                <div id="drink-items" class="space-y-2">
+                    <!-- 饮品物品会动态添加 -->
+                    <div class="text-center text-gray-400 py-8">没有可饮用的物品</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 探索窗口 -->
+    <div id="explore-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden fade-in">
+        <div class="bg-dark border border-secondary w-full max-w-md max-h-[90vh] flex flex-col">
+            <div class="p-4 border-b border-secondary flex justify-between items-center">
+                <h2 class="text-xl font-bold text-primary">选择探索地点</h2>
+                <button class="close-modal p-2 hover:bg-secondary/30 rounded">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div class="flex-grow p-4 overflow-y-auto">
+                <div class="space-y-3">
+                    <button class="explore-location w-full text-left p-3 bg-secondary/20 hover:bg-secondary/40 border border-secondary/50 rounded-lg transition-all" data-location="hospital">
+                        <i class="fa fa-medkit text-red-400 mr-2"></i>
+                        <span>医院</span>
+                        <p class="text-sm text-gray-400 mt-1">可能找到药品和医疗用品，但也可能有大量感染者</p>
+                    </button>
+                    <button class="explore-location w-full text-left p-3 bg-secondary/20 hover:bg-secondary/40 border border-secondary/50 rounded-lg transition-all" data-location="restaurant">
+                        <i class="fa fa-cutlery text-yellow-400 mr-2"></i>
+                        <span>餐厅</span>
+                        <p class="text-sm text-gray-400 mt-1">可能找到食物和水，但也可能有少量危险</p>
+                    </button>
+                    <button class="explore-location w-full text-left p-3 bg-secondary/20 hover:bg-secondary/40 border border-secondary/50 rounded-lg transition-all" data-location="supermarket">
+                        <i class="fa fa-shopping-cart text-blue-400 mr-2"></i>
+                        <span>超市</span>
+                        <p class="text-sm text-gray-400 mt-1">资源丰富，但也最为危险，可能遇到强大的敌人</p>
+                    </button>
+                    <button class="explore-location w-full text-left p-3 bg-secondary/20 hover:bg-secondary/40 border border-secondary/50 rounded-lg transition-all" data-location="residential">
+                        <i class="fa fa-home text-green-400 mr-2"></i>
+                        <span>居民区</span>
+                        <p class="text-sm text-gray-400 mt-1">资源中等，危险程度较低，适合新手探索</p>
+                    </button>
+                    <button class="explore-location w-full text-left p-3 bg-secondary/20 hover:bg-secondary/40 border border-secondary/50 rounded-lg transition-all" data-location="hardware">
+                        <i class="fa fa-wrench text-orange-400 mr-2"></i>
+                        <span>五金店</span>
+                        <p class="text-sm text-gray-400 mt-1">可能找到工具和建材，防御性较好</p>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 建造窗口 -->
+    <div id="build-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden fade-in">
+        <div class="bg-dark border border-secondary w-full max-w-md max-h-[90vh] flex flex-col">
+            <div class="p-4 border-b border-secondary flex justify-between items-center">
+                <h2 class="text-xl font-bold text-primary">建造建筑</h2>
+                <button class="close-modal p-2 hover:bg-secondary/30 rounded">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div class="flex-grow p-4 overflow-y-auto">
+                <div id="build-items" class="space-y-3">
+                    <div class="build-item p-3 bg-secondary/20 border border-secondary/50 rounded-lg">
+                        <h3 class="font-bold text-accent">灶台</h3>
+                        <p class="text-sm mb-2">可以烹饪食物，提升食物效果</p>
+                        <p class="text-sm text-gray-400 mb-2">需要: 木头 x5, 石头 x3</p>
+                        <button class="build-btn w-full mt-1 px-3 py-1 bg-primary hover:bg-primary/80 rounded transition-all" data-structure="stove">建造</button>
+                    </div>
+                    <div class="build-item p-3 bg-secondary/20 border border-secondary/50 rounded-lg">
+                        <h3 class="font-bold text-accent">床铺</h3>
+                        <p class="text-sm mb-2">可以更好地休息，恢复更多体力</p>
+                        <p class="text-sm text-gray-400 mb-2">需要: 木头 x3, 布料 x2</p>
+                        <button class="build-btn w-full mt-1 px-3 py-1 bg-primary hover:bg-primary/80 rounded transition-all" data-structure="bed">建造</button>
+                    </div>
+                    <div class="build-item p-3 bg-secondary/20 border border-secondary/50 rounded-lg">
+                        <h3 class="font-bold text-accent">工作台</h3>
+                        <p class="text-sm mb-2">可以制作更高级的工具和物品</p>
+                        <p class="text-sm text-gray-400 mb-2">需要: 木头 x10, 石头 x5, 金属 x2</p>
+                        <button class="build-btn w-full mt-1 px-3 py-1 bg-primary hover:bg-primary/80 rounded transition-all" data-structure="workbench">建造</button>
+                    </div>
+                    <div class="build-item p-3 bg-secondary/20 border border-secondary/50 rounded-lg">
+                        <h3 class="font-bold text-accent">分解台</h3>
+                        <p class="text-sm mb-2">可以将物品分解为基础材料</p>
+                        <p class="text-sm text-gray-400 mb-2">需要: 木头 x4, 金属 x1</p>
+                        <button class="build-btn w-full mt-1 px-3 py-1 bg-primary hover:bg-primary/80 rounded transition-all" data-structure="recycler">建造</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 合成窗口 -->
+    <div id="craft-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden fade-in">
+        <div class="bg-dark border border-secondary w-full max-w-md max-h-[90vh] flex flex-col">
+            <div class="p-4 border-b border-secondary flex justify-between items-center">
+                <h2 class="text-xl font-bold text-primary">物品合成</h2>
+                <button class="close-modal p-2 hover:bg-secondary/30 rounded">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div class="flex-grow p-4 overflow-y-auto">
+                <div id="craft-items" class="space-y-3">
+                    <div class="craft-item p-3 bg-secondary/20 border border-secondary/50 rounded-lg">
+                        <h3 class="font-bold text-accent">简易斧子</h3>
+                        <p class="text-sm mb-2">用于砍伐树木获取木材</p>
+                        <p class="text-sm text-gray-400 mb-2">需要: 木头 x3, 石头 x1</p>
+                        <button class="craft-btn w-full mt-1 px-3 py-1 bg-primary hover:bg-primary/80 rounded transition-all" data-item="axe">合成</button>
+                    </div>
+                    <div class="craft-item p-3 bg-secondary/20 border border-secondary/50 rounded-lg">
+                        <h3 class="font-bold text-accent">简易镐子</h3>
+                        <p class="text-sm mb-2">用于开采矿石获取矿石</p>
+                        <p class="text-sm text-gray-400 mb-2">需要: 木头 x2, 石头 x3</p>
+                        <button class="craft-btn w-full mt-1 px-3 py-1 bg-primary hover:bg-primary/80 rounded transition-all" data-item="pickaxe">合成</button>
+                    </div>
+                    <div class="craft-item p-3 bg-secondary/20 border border-secondary/50 rounded-lg">
+                        <h3 class="font-bold text-accent">简易长矛</h3>
+                        <p class="text-sm mb-2">用于自卫和狩猎</p>
+                        <p class="text-sm text-gray-400 mb-2">需要: 木头 x2, 石头 x1</p>
+                        <button class="craft-btn w-full mt-1 px-3 py-1 bg-primary hover:bg-primary/80 rounded transition-all" data-item="spear">合成</button>
+                    </div>
+                    <div class="craft-item p-3 bg-secondary/20 border border-secondary/50 rounded-lg">
+                        <h3 class="font-bold text-accent">绷带</h3>
+                        <p class="text-sm mb-2">用于治疗轻伤</p>
+                        <p class="text-sm text-gray-400 mb-2">需要: 布料 x2</p>
+                        <button class="craft-btn w-full mt-1 px-3 py-1 bg-primary hover:bg-primary/80 rounded transition-all" data-item="bandage">合成</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 战斗窗口 -->
+    <div id="combat-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden fade-in">
+        <div class="bg-dark border border-danger w-full max-w-md max-h-[90vh] flex flex-col">
+            <div class="p-4 border-b border-danger flex justify-between items-center">
+                <h2 class="text-xl font-bold text-danger">遭遇敌人!</h2>
+                <div id="enemy-health-container" class="flex items-center">
+                    <i class="fa fa-heart text-danger mr-1"></i>
+                    <span id="enemy-health" class="font-bold">50</span>
+                </div>
+            </div>
+            <div class="flex-grow p-4 overflow-y-auto">
+                <div id="combat-log" class="mb-4 h-32 overflow-y-auto p-2 bg-black/30 rounded">
+                    <p>你遇到了一只丧尸！准备战斗！</p>
+                </div>
+                <div id="enemy-info" class="text-center mb-4">
+                    <h3 id="enemy-name" class="text-xl font-bold text-danger">丧尸</h3>
+                    <div class="w-full bg-gray-700 rounded-full h-2.5 mt-2">
+                        <div id="enemy-health-bar" class="bg-danger h-2.5 rounded-full" style="width: 100%"></div>
+                    </div>
+                </div>
+                <div class="flex space-x-2">
+                    <button id="btn-attack" class="flex-1 p-3 bg-danger hover:bg-danger/80 rounded transition-all">
+                        <i class="fa fa-crosshairs mr-1"></i>攻击
+                    </button>
+                    <button id="btn-flee" class="flex-1 p-3 bg-warning text-dark hover:bg-warning/80 rounded transition-all">
+                        <i class="fa fa-sign-out mr-1"></i>逃跑
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 分解窗口 -->
+    <div id="recycle-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden fade-in">
+        <div class="bg-dark border border-secondary w-full max-w-md max-h-[90vh] flex flex-col">
+            <div class="p-4 border-b border-secondary flex justify-between items-center">
+                <h2 class="text-xl font-bold text-primary">分解物品</h2>
+                <button class="close-modal p-2 hover:bg-secondary/30 rounded">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div class="flex-grow p-4 overflow-y-auto">
+                <p class="mb-3 text-accent">选择要分解的物品:</p>
+                <div id="recycle-items" class="space-y-2">
+                    <!-- 可分解物品会动态添加 -->
+                    <div class="text-center text-gray-400 py-8">没有可分解的物品</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 烹饪窗口 -->
+    <div id="cook-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden fade-in">
+        <div class="bg-dark border border-secondary w-full max-w-md max-h-[90vh] flex flex-col">
+            <div class="p-4 border-b border-secondary flex justify-between items-center">
+                <h2 class="text-xl font-bold text-primary">烹饪食物</h2>
+                <button class="close-modal p-2 hover:bg-secondary/30 rounded">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div class="flex-grow p-4 overflow-y-auto">
+                <p class="mb-3 text-accent">选择要烹饪的食谱:</p>
+                <div class="space-y-3">
+                    <div class="p-3 bg-secondary/20 border border-secondary/50 rounded-lg">
+                        <h3 class="font-bold text-accent">烤肉</h3>
+                        <p class="text-sm mb-2">恢复更多饥饿值</p>
+                        <p class="text-sm text-gray-400 mb-2">需要: 生肉 x1</p>
+                        <button class="cook-btn w-full mt-1 px-3 py-1 bg-primary hover:bg-primary/80 rounded transition-all" data-recipe="cooked_meat">烹饪</button>
+                    </div>
+                    <div class="p-3 bg-secondary/20 border border-secondary/50 rounded-lg">
+                        <h3 class="font-bold text-accent">浆果派</h3>
+                        <p class="text-sm mb-2">恢复大量饥饿值</p>
+                        <p class="text-sm text-gray-400 mb-2">需要: 浆果 x3, 布料 x1(作为容器)</p>
+                        <button class="cook-btn w-full mt-1 px-3 py-1 bg-primary hover:bg-primary/80 rounded transition-all" data-recipe="berry_pie">烹饪</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 游戏状态
+        const gameState = {
+            health: 100,
+            hunger: 100,
+            thirst: 100,
+            energy: 100,
+            location: "庇护所",
+            backpack: [
+                { id: "water_bottle", name: "水瓶", type: "drink", quantity: 2, effect: { thirst: 30 } },
+                { id: "canned_food", name: "罐头食品", type: "food", quantity: 1, effect: { hunger: 40 } },
+                { id: "wood", name: "木头", type: "material", quantity: 5 },
+                { id: "stone", name: "石头", type: "material", quantity: 3 }
+            ],
+            storage: [],
+            structures: [],
+            inventory: {
+                // 记录所有物品的总拥有量(背包+仓库)
+            },
+            enemies: [
+                { id: "zombie", name: "丧尸", health: 50, damage: 10, loot: ["meat", "cloth"] },
+                { id: "snake", name: "毒蛇", health: 30, damage: 15, loot: ["meat", "venom"] },
+                { id: "boar", name: "疯野猪", health: 80, damage: 20, loot: ["meat", "hide"] }
+            ],
+            currentEnemy: null
+        };
+
+        // 物品数据库
+        const itemDatabase = {
+            water_bottle: { name: "水瓶", type: "drink", description: "一瓶干净的水", effect: { thirst: 30 } },
+            canned_food: { name: "罐头食品", type: "food", description: "密封的罐头，保质期长", effect: { hunger: 40 } },
+            berry: { name: "浆果", type: "food", description: "野生浆果，味道酸甜", effect: { hunger: 10 } },
+            meat: { name: "生肉", type: "food", description: "生肉，可能携带病菌", effect: { hunger: 20, health: -5 } },
+            cooked_meat: { name: "烤肉", type: "food", description: "烤熟的肉，更安全美味", effect: { hunger: 35 } },
+            berry_pie: { name: "浆果派", type: "food", description: "用浆果做的派，非常美味", effect: { hunger: 50 } },
+            wood: { name: "木头", type: "material", description: "可以用来建造和制作工具" },
+            stone: { name: "石头", type: "material", description: "坚硬的石头，可用于制作工具和建筑" },
+            metal: { name: "金属碎片", type: "material", description: "可以用来制作更坚固的工具" },
+            cloth: { name: "布料", type: "material", description: "可以用来制作简单的物品和绷带" },
+            hide: { name: "兽皮", type: "material", description: "动物的皮毛，可以制作衣物" },
+            venom: { name: "毒液", type: "material", description: "毒蛇的毒液，可能有用" },
+            axe: { name: "简易斧子", type: "tool", description: "可以用来砍伐树木", requiredFor: ["forest"] },
+            pickaxe: { name: "简易镐子", type: "tool", description: "可以用来开采矿石", requiredFor: ["mine"] },
+            spear: { name: "简易长矛", type: "weapon", description: "可以用来狩猎和自卫", attack: 15 },
+            bandage: { name: "绷带", type: "medical", description: "可以治疗轻伤", effect: { health: 20 } }
+        };
+
+        // DOM 元素
+        const elements = {
+            health: document.getElementById('health'),
+            hunger: document.getElementById('hunger'),
+            thirst: document.getElementById('thirst'),
+            energy: document.getElementById('energy'),
+            location: document.getElementById('location'),
+            gameMessages: document.getElementById('game-messages'),
+            locationInfo: document.getElementById('location-info'),
+            structures: document.getElementById('structures'),
+            backpackItems: document.getElementById('backpack-items'),
+            storageItems: document.getElementById('storage-items'),
+            foodItems: document.getElementById('food-items'),
+            drinkItems: document.getElementById('drink-items'),
+            enemyName: document.getElementById('enemy-name'),
+            enemyHealth: document.getElementById('enemy-health'),
+            enemyHealthBar: document.getElementById('enemy-health-bar'),
+            combatLog: document.getElementById('combat-log'),
+            recycleItems: document.getElementById('recycle-items'),
+            
+            // 按钮
+            btnExplore: document.getElementById('btn-explore'),
+            btnBackpack: document.getElementById('btn-backpack'),
+            btnEat: document.getElementById('btn-eat'),
+            btnDrink: document.getElementById('btn-drink'),
+            btnRest: document.getElementById('btn-rest'),
+            btnCraft: document.getElementById('btn-craft'),
+            btnBuild: document.getElementById('btn-build'),
+            btnStorage: document.getElementById('btn-storage'),
+            btnBatchStore: document.getElementById('btn-batch-store'),
+            btnAttack: document.getElementById('btn-attack'),
+            btnFlee: document.getElementById('btn-flee'),
+            
+            // 模态窗口
+            backpackModal: document.getElementById('backpack-modal'),
+            storageModal: document.getElementById('storage-modal'),
+            eatModal: document.getElementById('eat-modal'),
+            drinkModal: document.getElementById('drink-modal'),
+            exploreModal: document.getElementById('explore-modal'),
+            buildModal: document.getElementById('build-modal'),
+            craftModal: document.getElementById('craft-modal'),
+            combatModal: document.getElementById('combat-modal'),
+            recycleModal: document.getElementById('recycle-modal'),
+            cookModal: document.getElementById('cook-modal'),
+            
+            // 其他
+            resourceBtns: document.querySelectorAll('.resource-btn'),
+            exploreLocations: document.querySelectorAll('.explore-location'),
+            buildBtns: document.querySelectorAll('.build-btn'),
+            craftBtns: document.querySelectorAll('.craft-btn'),
+            cookBtns: document.querySelectorAll('.cook-btn'),
+            closeModals: document.querySelectorAll('.close-modal')
+        };
+
+        // 初始化游戏
+        function initGame() {
+            updateUI();
+            setupEventListeners();
+            // 每30秒消耗一些状态值
+            setInterval(() => {
+                gameState.hunger = Math.max(0, gameState.hunger - 5);
+                gameState.thirst = Math.max(0, gameState.thirst - 7);
+                gameState.energy = Math.max(0, gameState.energy - 4);
+                
+                // 如果饥饿或口渴为0，开始减少生命值
+                if (gameState.hunger === 0) {
+                    gameState.health = Math.max(0, gameState.health - 2);
+                    addMessage("你非常饥饿，正在消耗生命值...");
+                }
+                if (gameState.thirst === 0) {
+                    gameState.health = Math.max(0, gameState.health - 3);
+                    addMessage("你非常口渴，正在消耗生命值...");
+                }
+                
+                // 检查死亡
+                if (gameState.health <= 0) {
+                    gameOver();
+                }
+                
+                updateUI();
+            }, 30000);
+        }
+
+        // 更新UI显示
+        function updateUI() {
+            elements.health.textContent = gameState.health;
+            elements.hunger.textContent = gameState.hunger;
+            elements.thirst.textContent = gameState.thirst;
+            elements.energy.textContent = gameState.energy;
+            elements.location.textContent = gameState.location;
+            
+            // 更新状态条颜色
+            if (gameState.health < 30) elements.health.classList.add('text-danger');
+            else elements.health.classList.remove('text-danger');
+            
+            if (gameState.hunger < 30) elements.hunger.classList.add('text-danger');
+            else elements.hunger.classList.remove('text-danger');
+            
+            if (gameState.thirst < 30) elements.thirst.classList.add('text-danger');
+            else elements.thirst.classList.remove('text-danger');
+            
+            if (gameState.energy < 30) elements.energy.classList.add('text-danger');
+            else elements.energy.classList.remove('text-danger');
+            
+            // 更新背包
+            renderBackpack();
+            
+            // 更新仓库
+            renderStorage();
+            
+            // 更新可食用物品
+            renderFoodItems();
+            
+            // 更新可饮用物品
+            renderDrinkItems();
+            
+            // 更新可分解物品
+            renderRecycleItems();
+            
+            // 更新已建造建筑
+            renderStructures();
+        }
+
+        // 渲染背包
+        function renderBackpack() {
+            if (gameState.backpack.length === 0) {
+                elements.backpackItems.innerHTML = '<div class="text-center text-gray-400 py-8">背包是空的</div>';
+                return;
+            }
+            
+            elements.backpackItems.innerHTML = '';
+            gameState.backpack.forEach((item, index) => {
+                const itemData = itemDatabase[item.id];
+                const itemElement = document.createElement('div');
+                itemElement.className = 'p-3 bg-secondary/20 border border-secondary/50 rounded-lg flex justify-between items-center';
+                itemElement.innerHTML = `
+                    <div>
+                        <div class="font-bold">${itemData.name}</div>
+                        <div class="text-sm text-gray-400">数量: ${item.quantity}</div>
+                        <div class="text-xs text-gray-500 mt-1">${itemData.description || ''}</div>
+                    </div>
+                    <div class="flex space-x-1">
+                        <button class="use-item-btn p-1 hover:bg-secondary/30 rounded" data-index="${index}" ${itemData.type !== 'food' && itemData.type !== 'drink' && itemData.type !== 'medical' ? 'disabled' : ''}>
+                            <i class="fa fa-plus-circle ${itemData.type === 'food' ? 'text-yellow-400' : itemData.type === 'drink' ? 'text-blue-400' : 'text-green-400'}"></i>
+                        </button>
+                        <button class="store-item-btn p-1 hover:bg-secondary/30 rounded" data-index="${index}">
+                            <i class="fa fa-archive text-accent"></i>
+                        </button>
+                        <button class="drop-item-btn p-1 hover:bg-secondary/30 rounded" data-index="${index}">
+                            <i class="fa fa-trash text-danger"></i>
+                        </button>
+                    </div>
+                `;
+                elements.backpackItems.appendChild(itemElement);
+            });
+            
+            // 添加事件监听器
+            document.querySelectorAll('.use-item-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const index = parseInt(e.currentTarget.dataset.index);
+                    useItem(index);
+                });
+            });
+            
+            document.querySelectorAll('.store-item-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const index = parseInt(e.currentTarget.dataset.index);
+                    moveToStorage(index);
+                });
+            });
+            
+            document.querySelectorAll('.drop-item-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const index = parseInt(e.currentTarget.dataset.index);
+                    dropItem(index);
+                });
+            });
+        }
+
+        // 渲染仓库
+        function renderStorage() {
+            if (gameState.storage.length === 0) {
+                elements.storageItems.innerHTML = '<div class="text-center text-gray-400 py-8">仓库是空的</div>';
+                return;
+            }
+            
+            elements.storageItems.innerHTML = '';
+            gameState.storage.forEach((item, index) => {
+                const itemData = itemDatabase[item.id];
+                const itemElement = document.createElement('div');
+                itemElement.className = 'p-3 bg-secondary/20 border border-secondary/50 rounded-lg flex justify-between items-center';
+                itemElement.innerHTML = `
+                    <div>
+                        <div class="font-bold">${itemData.name}</div>
+                        <div class="text-sm text-gray-400">数量: ${item.quantity}</div>
+                        <div class="text-xs text-gray-500 mt-1">${itemData.description || ''}</div>
+                    </div>
+                    <button class="take-item-btn p-2 hover:bg-secondary/30 rounded" data-index="${index}">
+                        <i class="fa fa-arrow-right text-primary"></i> 取出
+                    </button>
+                `;
+                elements.storageItems.appendChild(itemElement);
+            });
+            
+            // 添加事件监听器
+            document.querySelectorAll('.take-item-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const index = parseInt(e.currentTarget.dataset.index);
+                    moveToBackpack(index);
+                });
+            });
+        }
+
+        // 渲染可食用物品
+        function renderFoodItems() {
+            const foodItems = gameState.backpack.filter(item => itemDatabase[item.id].type === 'food');
+            
+            if (foodItems.length === 0) {
+                elements.foodItems.innerHTML = '<div class="text-center text-gray-400 py-8">没有可食用的物品</div>';
+                return;
+            }
+            
+            elements.foodItems.innerHTML = '';
+            foodItems.forEach((item, index) => {
+                const itemData = itemDatabase[item.id];
+                const itemElement = document.createElement('div');
+                itemElement.className = 'p-3 bg-secondary/20 border border-secondary/50 rounded-lg flex justify-between items-center';
+                itemElement.innerHTML = `
+                    <div>
+                        <div class="font-bold">${itemData.name}</div>
+                        <div class="text-sm text-gray-400">数量: ${item.quantity}</div>
+                        <div class="text-xs text-gray-500 mt-1">${itemData.description || ''}
+                            ${itemData.effect ? ' - ' + Object.entries(itemData.effect).map(([key, value]) => 
+                                `${value > 0 ? '+' : ''}${value} ${getStatName(key)}`).join(', ') : ''}
+                        </div>
+                    </div>
+                    <button class="eat-item-btn p-2 hover:bg-secondary/30 rounded" data-id="${item.id}">
+                        <i class="fa fa-cutlery text-yellow-400 mr-1"></i> 食用
+                    </button>
+                `;
+                elements.foodItems.appendChild(itemElement);
+            });
+            
+            // 添加事件监听器
+            document.querySelectorAll('.eat-item-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const itemId = e.currentTarget.dataset.id;
+                    consumeItem(itemId, 'food');
+                });
+            });
+        }
+
+        // 渲染可饮用物品
+        function renderDrinkItems() {
+            const drinkItems = gameState.backpack.filter(item => itemDatabase[item.id].type === 'drink');
+            
+            if (drinkItems.length === 0) {
+                elements.drinkItems.innerHTML = '<div class="text-center text-gray-400 py-8">没有可饮用的物品</div>';
+                return;
+            }
+            
+            elements.drinkItems.innerHTML = '';
+            drinkItems.forEach((item, index) => {
+                const itemData = itemDatabase[item.id];
+                const itemElement = document.createElement('div');
+                itemElement.className = 'p-3 bg-secondary/20 border border-secondary/50 rounded-lg flex justify-between items-center';
+                itemElement.innerHTML = `
+                    <div>
+                        <div class="font-bold">${itemData.name}</div>
+                        <div class="text-sm text-gray-400">数量: ${item.quantity}</div>
+                        <div class="text-xs text-gray-500 mt-1">${itemData.description || ''}
+                            ${itemData.effect ? ' - ' + Object.entries(itemData.effect).map(([key, value]) => 
+                                `${value > 0 ? '+' : ''}${value} ${getStatName(key)}`).join(', ') : ''}
+                        </div>
+                    </div>
+                    <button class="drink-item-btn p-2 hover:bg-secondary/30 rounded" data-id="${item.id}">
+                        <i class="fa fa-tint text-blue-400 mr-1"></i> 饮用
+                    </button>
+                `;
+                elements.drinkItems.appendChild(itemElement);
+            });
+            
+            // 添加事件监听器
+            document.querySelectorAll('.drink-item-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const itemId = e.currentTarget.dataset.id;
+                    consumeItem(itemId, 'drink');
+                });
+            });
+        }
+
+        // 渲染可分解物品
+        function renderRecycleItems() {
+            const recyclableItems = gameState.backpack.filter(item => 
+                itemDatabase[item.id].type !== 'material' && 
+                itemDatabase[item.id].type !== 'food' && 
+                itemDatabase[item.id].type !== 'drink'
+            );
+            
+            if (recyclableItems.length === 0) {
+                elements.recycleItems.innerHTML = '<div class="text-center text-gray-400 py-8">没有可分解的物品</div>';
+                return;
+            }
+            
+            elements.recycleItems.innerHTML = '';
+            recyclableItems.forEach((item, index) => {
+                const itemData = itemDatabase[item.id];
+                const itemElement = document.createElement('div');
+                itemElement.className = 'p-3 bg-secondary/20 border border-secondary/50 rounded-lg flex justify-between items-center';
+                itemElement.innerHTML = `
+                    <div>
+                        <div class="font-bold">${itemData.name}</div>
+                        <div class="text-sm text-gray-400">数量: ${item.quantity}</div>
+                        <div class="text-xs text-gray-500 mt-1">可分解为基础材料</div>
+                    </div>
+                    <button class="recycle-item-btn p-2 hover:bg-secondary/30 rounded" data-id="${item.id}">
+                        <i class="fa fa-recycle text-accent mr-1"></i> 分解
+                    </button>
+                `;
+                elements.recycleItems.appendChild(itemElement);
+            });
+            
+            // 添加事件监听器
+            document.querySelectorAll('.recycle-item-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const itemId = e.currentTarget.dataset.id;
+                    recycleItem(itemId);
+                });
+            });
+        }
+
+        // 渲染已建造建筑
+        function renderStructures() {
+            if (gameState.structures.length === 0) {
+                elements.structures.innerHTML = '<p class="text-sm text-accent">已建造: 无</p>';
+                return;
+            }
+            
+            let structuresHTML = '<p class="text-sm text-accent mb-2">已建造:</p><div class="grid grid-cols-2 gap-2">';
+            
+            gameState.structures.forEach(structure => {
+                let name, icon;
+                switch(structure) {
+                    case 'stove':
+                        name = '灶台';
+                        icon = 'fa-fire';
+                        break;
+                    case 'bed':
+                        name = '床铺';
+                        icon = 'fa-bed';
+                        break;
+                    case 'workbench':
+                        name = '工作台';
+                        icon = 'fa-wrench';
+                        break;
+                    case 'recycler':
+                        name = '分解台';
+                        icon = 'fa-recycle';
+                        break;
+                }
+                
+                structuresHTML += `
+                    <div class="flex items-center p-2 bg-secondary/10 rounded">
+                        <i class="fa ${icon} text-accent mr-2"></i>
+                        <span>${name}</span>
+                        ${structure === 'stove' ? `<button class="ml-auto text-xs bg-primary/70 hover:bg-primary px-2 py-0.5 rounded open-cook-modal">烹饪</button>` : ''}
+                        ${structure === 'recycler' ? `<button class="ml-auto text-xs bg-primary/70 hover:bg-primary px-2 py-0.5 rounded open-recycle-modal">分解</button>` : ''}
+                    </div>
+                `;
+            });
+            
+            structuresHTML += '</div>';
+            elements.structures.innerHTML = structuresHTML;
+            
+            // 添加建筑功能按钮事件
+            document.querySelectorAll('.open-cook-modal').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    elements.cookModal.classList.remove('hidden');
+                });
+            });
+            
+            document.querySelectorAll('.open-recycle-modal').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    elements.recycleModal.classList.remove('hidden');
+                });
+            });
+        }
+
+        // 添加游戏消息
+        function addMessage(message) {
+            const messageElement = document.createElement('p');
+            messageElement.className = 'mb-1 fade-in';
+            messageElement.textContent = message;
+            elements.gameMessages.appendChild(messageElement);
+            elements.gameMessages.scrollTop = elements.gameMessages.scrollHeight;
+        }
+
+        // 获取状态名称
+        function getStatName(stat) {
+            const names = {
+                health: '生命值',
+                hunger: '饥饿值',
+                thirst: '口渴值',
+                energy: '体力值'
+            };
+            return names[stat] || stat;
+        }
+
+        // 使用物品
+        function useItem(index) {
+            const item = gameState.backpack[index];
+            const itemData = itemDatabase[item.id];
+            
+            if (!itemData.effect) {
+                addMessage(`无法使用${itemData.name}`);
+                return;
+            }
+            
+            // 应用物品效果
+            Object.entries(itemData.effect).forEach(([stat, value]) => {
+                if (gameState[stat] !== undefined) {
+                    gameState[stat] = Math.max(0, Math.min(100, gameState[stat] + value));
+                    addMessage(`${itemData.name}${value > 0 ? '增加' : '减少'}了${Math.abs(value)}点${getStatName(stat)}`);
+                }
+            });
+            
+            // 减少物品数量
+            item.quantity--;
+            if (item.quantity === 0) {
+                gameState.backpack.splice(index, 1);
+            }
+            
+            updateUI();
+            elements.backpackModal.classList.add('hidden');
+        }
+
+        // 消耗物品(食物/水)
+        function consumeItem(itemId, type) {
+            const itemIndex = gameState.backpack.findIndex(item => item.id === itemId);
+            if (itemIndex === -1) return;
+            
+            const item = gameState.backpack[itemIndex];
+            const itemData = itemDatabase[item.id];
+            
+            // 应用物品效果
+            Object.entries(itemData.effect).forEach(([stat, value]) => {
+                if (gameState[stat] !== undefined) {
+                    gameState[stat] = Math.max(0, Math.min(100, gameState[stat] + value));
+                    addMessage(`${itemData.name}${value > 0 ? '增加' : '减少'}了${Math.abs(value)}点${getStatName(stat)}`);
+                }
+            });
+            
+            // 减少物品数量
+            item.quantity--;
+            if (item.quantity === 0) {
+                gameState.backpack.splice(itemIndex, 1);
+            }
+            
+            updateUI();
+            
+            // 关闭对应的模态窗口
+            if (type === 'food') {
+                elements.eatModal.classList.add('hidden');
+            } else if (type === 'drink') {
+                elements.drinkModal.classList.add('hidden');
+            }
+        }
+
+        // 移动物品到仓库
+        function moveToStorage(index) {
+            const item = gameState.backpack[index];
+            
+            // 检查仓库中是否已有该物品
+            const storageIndex = gameState.storage.findIndex(i => i.id === item.id);
+            
+            if (storageIndex !== -1) {
+                // 增加已有物品的数量
+                gameState.storage[storageIndex].quantity += item.quantity;
+            } else {
+                // 添加新物品到仓库
+                gameState.storage.push({...item});
+            }
+            
+            // 从背包中移除物品
+            gameState.backpack.splice(index, 1);
+            
+            addMessage(`将${itemDatabase[item.id].name}存入仓库`);
+            updateUI();
+        }
+
+        // 批量存储
+        function batchStore() {
+            if (gameState.backpack.length === 0) {
+                addMessage("背包是空的，没有物品可以存储");
+                return;
+            }
+            
+            gameState.backpack.forEach(item => {
+                // 检查仓库中是否已有该物品
+                const storageIndex = gameState.storage.findIndex(i => i.id === item.id);
+                
+                if (storageIndex !== -1) {
+                    // 增加已有物品的数量
+                    gameState.storage[storageIndex].quantity += item.quantity;
+                } else {
+                    // 添加新物品到仓库
+                    gameState.storage.push({...item});
+                }
+            });
+            
+            // 清空背包
+            const itemCount = gameState.backpack.length;
+            gameState.backpack = [];
+            
+            addMessage(`将${itemCount}种物品批量存入仓库`);
+            updateUI();
+            elements.backpackModal.classList.add('hidden');
+        }
+
+        // 移动物品到背包
+        function moveToBackpack(index) {
+            const item = gameState.storage[index];
+            
+            // 检查背包中是否已有该物品
+            const backpackIndex = gameState.backpack.findIndex(i => i.id === item.id);
+            
+            if (backpackIndex !== -1) {
+                // 增加已有物品的数量
+                gameState.backpack[backpackIndex].quantity += item.quantity;
+            } else {
+                // 添加新物品到背包
+                gameState.backpack.push({...item});
+            }
+            
+            // 从仓库中移除物品
+            gameState.storage.splice(index, 1);
+            
+            addMessage(`将${itemDatabase[item.id].name}取出到背包`);
+            updateUI();
+        }
+
+        // 丢弃物品
+        function dropItem(index) {
+            const item = gameState.backpack[index];
+            const itemData = itemDatabase[item.id];
+            
+            // 从背包中移除物品
+            gameState.backpack.splice(index, 1);
+            
+            addMessage(`丢弃了${itemData.name} x${item.quantity}`);
+            updateUI();
+        }
+
+        // 探索资源点
+        function exploreResource(resource) {
+            let resourceName, requiredTool, foundItems, messages;
+            
+            switch(resource) {
+                case 'forest':
+                    resourceName = '森林';
+                    requiredTool = 'axe';
+                    foundItems = [
+                        { id: 'wood', min: 2, max: 5 },
+                        { id: 'berry', min: 0, max: 3 },
+                        { id: 'cloth', min: 0, max: 1 }
+                    ];
+                    messages = [
+                        "你在森林中砍倒了几棵树。",
+                        "森林里树木茂盛，你收集了不少木材。",
+                        "你在森林中探索，找到了一些有用的资源。"
+                    ];
+                    break;
+                case 'mine':
+                    resourceName = '矿脉';
+                    requiredTool = 'pickaxe';
+                    foundItems = [
+                        { id: 'stone', min: 2, max: 4 },
+                        { id: 'metal', min: 0, max: 2 }
+                    ];
+                    messages = [
+                        "你在矿脉中开采了一些矿石。",
+                        "矿脉里资源丰富，你找到了不少石头和金属。",
+                        "你辛苦挖掘，获得了一些矿石资源。"
+                    ];
+                    break;
+                case 'bush':
+                    resourceName = '灌木丛';
+                    requiredTool = null;
+                    foundItems = [
+                        { id: 'berry', min: 1, max: 4 },
+                        { id: 'wood', min: 0, max: 2 }
+                    ];
+                    messages = [
+                        "你在灌木丛中找到了一些浆果。",
+                        "灌木丛里有不少可食用的浆果，你采摘了一些。",
+                        "你搜索了灌木丛，获得了一些浆果和树枝。"
+                    ];
+                    break;
+            }
+            
+            // 检查是否需要工具且拥有该工具
+            if (requiredTool) {
+                const hasTool = gameState.backpack.some(item => item.id === requiredTool) || 
+                               gameState.storage.some(item => item.id === requiredTool);
+                
+                if (!hasTool) {
+                    addMessage(`探索${resourceName}需要${itemDatabase[requiredTool].name}`);
+                    return;
+                }
+            }
+            
+            // 消耗体力
+            const energyCost = 15;
+            gameState.energy = Math.max(0, gameState.energy - energyCost);
+            addMessage(`你花费了${energyCost}点体力探索${resourceName}`);
+            
+            // 随机选择一条消息
+            const message = messages[Math.floor(Math.random() * messages.length)];
+            addMessage(message);
+            
+            // 找到物品
+            foundItems.forEach(item => {
+                const quantity = Math.floor(Math.random() * (item.max - item.min + 1)) + item.min;
+                if (quantity > 0) {
+                    // 检查背包中是否已有该物品
+                    const backpackIndex = gameState.backpack.findIndex(i => i.id === item.id);
+                    
+                    if (backpackIndex !== -1) {
+                        // 增加已有物品的数量
+                        gameState.backpack[backpackIndex].quantity += quantity;
+                    } else {
+                        // 添加新物品到背包
+                        gameState.backpack.push({ id: item.id, quantity: quantity });
+                    }
+                    
+                    addMessage(`找到${itemDatabase[item.id].name} x${quantity}`);
+                }
+            });
+            
+            // 有几率遇到敌人
+            if (Math.random() < 0.3) { // 30%几率遇到敌人
+                encounterEnemy();
+            }
+            
+            updateUI();
+        }
+
+        // 探索地点
+        function exploreLocation(location) {
+            let locationName, messages, foundItems, enemyChance;
+            
+            switch(location) {
+                case 'hospital':
+                    locationName = '医院';
+                    enemyChance = 0.6;
+                    messages = [
+                        "医院里弥漫着消毒水和腐烂的混合气味。",
+                        "你小心翼翼地进入医院，这里曾经救死扶伤，现在却危机四伏。",
+                        "医院的走廊里散落着医疗用品和杂物。"
+                    ];
+                    foundItems = [
+                        { id: 'bandage', min: 0, max: 3 },
+                        { id: 'water_bottle', min: 1, max: 2 },
+                        { id: 'cloth', min: 2, max: 5 }
+                    ];
+                    break;
+                case 'restaurant':
+                    locationName = '餐厅';
+                    enemyChance = 0.4;
+                    messages = [
+                        "餐厅里一片狼藉，餐桌上还残留着未吃完的食物。",
+                        "你进入了一家餐厅，希望能找到一些可食用的东西。",
+                        "餐厅的厨房可能有食物，但也可能有危险。"
+                    ];
+                    foundItems = [
+                        { id: 'canned_food', min: 0, max: 2 },
+                        { id: 'water_bottle', min: 1, max: 3 },
+                        { id: 'wood', min: 1, max: 3 }
+                    ];
+                    break;
+                case 'supermarket':
+                    locationName = '超市';
+                    enemyChance = 0.8;
+                    messages = [
+                        "超市里一片混乱，货架东倒西歪，商品散落一地。",
+                        "你鼓起勇气进入超市，这里资源丰富但也最为危险。",
+                        "超市的大门被撞开，里面可能有很多感染者。"
+                    ];
+                    foundItems = [
+                        { id: 'canned_food', min: 1, max: 4 },
+                        { id: 'water_bottle', min: 2, max: 5 },
+                        { id: 'cloth', min: 1, max: 3 },
+                        { id: 'metal', min: 0, max: 2 }
+                    ];
+                    break;
+                case 'residential':
+                    locationName = '居民区';
+                    enemyChance = 0.3;
+                    messages = [
+                        "你进入了一个居民区，这里的房屋大多完好。",
+                        "居民区相对安全，你可以挨家挨户地搜索。",
+                        "有些房屋的门是锁着的，但也有些是敞开的。"
+                    ];
+                    foundItems = [
+                        { id: 'canned_food', min: 0, max: 2 },
+                        { id: 'water_bottle', min: 0, max: 2 },
+                        { id: 'wood', min: 2, max: 4 },
+                        { id: 'cloth', min: 1, max: 2 }
+                    ];
+                    break;
+                case 'hardware':
+                    locationName = '五金店';
+                    enemyChance = 0.4;
+                    messages = [
+                        "你找到了一家五金店，这里可能有有用的工具。",
+                        "五金店的货架上还有不少工具和建材。",
+                        "你小心翼翼地进入五金店，希望能找到一些实用的东西。"
+                    ];
+                    foundItems = [
+                        { id: 'wood', min: 3, max: 6 },
+                        { id: 'metal', min: 2, max: 4 },
+                        { id: 'stone', min: 1, max: 3 }
+                    ];
+                    break;
+            }
+            
+            // 关闭探索窗口
+            elements.exploreModal.classList.add('hidden');
+            
+            // 消耗体力
+            const energyCost = 25;
+            gameState.energy = Math.max(0, gameState.energy - energyCost);
+            addMessage(`你花费了${energyCost}点体力探索${locationName}`);
+            
+            // 随机选择一条消息
+            const message = messages[Math.floor(Math.random() * messages.length)];
+            addMessage(message);
+            
+            // 找到物品
+            foundItems.forEach(item => {
+                const quantity = Math.floor(Math.random() * (item.max - item.min + 1)) + item.min;
+                if (quantity > 0) {
+                    // 检查背包中是否已有该物品
+                    const backpackIndex = gameState.backpack.findIndex(i => i.id === item.id);
+                    
+                    if (backpackIndex !== -1) {
+                        // 增加已有物品的数量
+                        gameState.backpack[backpackIndex].quantity += quantity;
+                    } else {
+                        // 添加新物品到背包
+                        gameState.backpack.push({ id: item.id, quantity: quantity });
+                    }
+                    
+                    addMessage(`找到${itemDatabase[item.id].name} x${quantity}`);
+                }
+            });
+            
+            // 遇到敌人
+            if (Math.random() < enemyChance) {
+                encounterEnemy();
+            }
+            
+            updateUI();
+        }
+
+        // 遭遇敌人
+        function encounterEnemy() {
+            // 随机选择一个敌人
+            const enemy = gameState.enemies[Math.floor(Math.random() * gameState.enemies.length)];
+            gameState.currentEnemy = { ...enemy };
+            
+            // 更新战斗界面
+            elements.enemyName.textContent = enemy.name;
+            elements.enemyHealth.textContent = enemy.health;
+            elements.enemyHealthBar.style.width = '100%';
+            
+            // 清空战斗日志
+            elements.combatLog.innerHTML = `<p>你遇到了一只${enemy.name}！准备战斗！</p>`;
+            
+            // 显示战斗窗口
+            elements.combatModal.classList.remove('hidden');
+        }
+
+        // 攻击敌人
+        function attackEnemy() {
+            if (!gameState.currentEnemy) return;
+            
+            // 计算玩家攻击力 (基础10点，有武器则增加)
+            let playerAttack = 10;
+            const spearIndex = gameState.backpack.findIndex(item => item.id === 'spear');
+            if (spearIndex !== -1) {
+                playerAttack += itemDatabase.spear.attack;
+            }
+            
+            // 对敌人造成伤害
+            gameState.currentEnemy.health -= playerAttack;
+            elements.combatLog.innerHTML += `<p>你对${gameState.currentEnemy.name}造成了${playerAttack}点伤害！</p>`;
+            
+            // 更新敌人生命值
+            elements.enemyHealth.textContent = Math.max(0, gameState.currentEnemy.health);
+            const healthPercent = Math.max(0, (gameState.currentEnemy.health / gameState.enemies.find(e => e.id === gameState.currentEnemy.id).health) * 100);
+            elements.enemyHealthBar.style.width = `${healthPercent}%`;
+            
+            // 检查敌人是否死亡
+            if (gameState.currentEnemy.health <= 0) {
+                enemyDefeated();
+                return;
+            }
+            
+            // 敌人反击
+            setTimeout(() => {
+                gameState.health -= gameState.currentEnemy.damage;
+                elements.combatLog.innerHTML += `<p>${gameState.currentEnemy.name}对你造成了${gameState.currentEnemy.damage}点伤害！</p>`;
+                
+                // 检查玩家是否死亡
+                if (gameState.health <= 0) {
+                    elements.combatLog.innerHTML += `<p>你被${gameState.currentEnemy.name}击败了...</p>`;
+                    setTimeout(gameOver, 2000);
+                    return;
+                }
+                
+                updateUI();
+                elements.combatLog.scrollTop = elements.combatLog.scrollHeight;
+            }, 1000);
+            
+            elements.combatLog.scrollTop = elements.combatLog.scrollHeight;
+        }
+
+        // 敌人被击败
+        function enemyDefeated() {
+            elements.combatLog.innerHTML += `<p>你击败了${gameState.currentEnemy.name}！</p>`;
+            
+            // 获得战利品
+            gameState.currentEnemy.loot.forEach(lootId => {
+                const quantity = Math.floor(Math.random() * 2) + 1; // 1-2个
+                
+                // 检查背包中是否已有该物品
+                const backpackIndex = gameState.backpack.findIndex(item => item.id === lootId);
+                
+                if (backpackIndex !== -1) {
+                    // 增加已有物品的数量
+                    gameState.backpack[backpackIndex].quantity += quantity;
+                } else {
+                    // 添加新物品到背包
+                    gameState.backpack.push({ id: lootId, quantity: quantity });
+                }
+                
+                elements.combatLog.innerHTML += `<p>你获得了${itemDatabase[lootId].name} x${quantity}</p>`;
+            });
+            
+            // 关闭战斗窗口
+            setTimeout(() => {
+                elements.combatModal.classList.add('hidden');
+                gameState.currentEnemy = null;
+                updateUI();
+            }, 2000);
+            
+            elements.combatLog.scrollTop = elements.combatLog.scrollHeight;
+        }
+
+        // 尝试逃跑
+        function tryFlee() {
+            if (!gameState.currentEnemy) return;
+            
+            // 逃跑成功率50%
+            if (Math.random() < 0.5) {
+                elements.combatLog.innerHTML += `<p>你成功逃脱了${gameState.currentEnemy.name}的追击！</p>`;
+                setTimeout(() => {
+                    elements.combatModal.classList.add('hidden');
+                    gameState.currentEnemy = null;
+                }, 1500);
+            } else {
+                elements.combatLog.innerHTML += `<p>你没能逃脱，${gameState.currentEnemy.name}趁机攻击了你！</p>`;
+                gameState.health -= gameState.currentEnemy.damage;
+                
+                // 检查玩家是否死亡
+                if (gameState.health <= 0) {
+                    elements.combatLog.innerHTML += `<p>你被${gameState.currentEnemy.name}击败了...</p>`;
+                    setTimeout(gameOver, 2000);
+                    return;
+                }
+                
+                updateUI();
+            }
+            
+            elements.combatLog.scrollTop = elements.combatLog.scrollHeight;
+        }
+
+        // 休息
+        function rest() {
+            // 消耗时间，恢复体力和生命值
+            const energyRestore = gameState.structures.includes('bed') ? 40 : 25;
+            const healthRestore = gameState.structures.includes('bed') ? 20 : 10;
+            
+            gameState.energy = Math.min(100, gameState.energy + energyRestore);
+            gameState.health = Math.min(100, gameState.health + healthRestore);
+            
+            // 休息时会消耗饥饿和口渴
+            gameState.hunger = Math.max(0, gameState.hunger - 10);
+            gameState.thirst = Math.max(0, gameState.thirst - 10);
+            
+            addMessage(`你休息了一会儿，恢复了${energyRestore}点体力和${healthRestore}点生命值`);
+            if (gameState.structures.includes('bed')) {
+                addMessage("舒适的床铺让你的休息效果更好");
+            }
+            
+            updateUI();
+        }
+
+        // 建造建筑
+        function buildStructure(structure) {
+            // 检查是否已经建造
+            if (gameState.structures.includes(structure)) {
+                addMessage("你已经建造了这个建筑");
+                return;
+            }
+            
+            // 检查材料
+            let requiredMaterials, structureName;
+            
+            switch(structure) {
+                case 'stove':
+                    structureName = '灶台';
+                    requiredMaterials = [
+                        { id: 'wood', quantity: 5 },
+                        { id: 'stone', quantity: 3 }
+                    ];
+                    break;
+                case 'bed':
+                    structureName = '床铺';
+                    requiredMaterials = [
+                        { id: 'wood', quantity: 3 },
+                        { id: 'cloth', quantity: 2 }
+                    ];
+                    break;
+                case 'workbench':
+                    structureName = '工作台';
+                    requiredMaterials = [
+                        { id: 'wood', quantity: 10 },
+                        { id: 'stone', quantity: 5 },
+                        { id: 'metal', quantity: 2 }
+                    ];
+                    break;
+                case 'recycler':
+                    structureName = '分解台';
+                    requiredMaterials = [
+                        { id: 'wood', quantity: 4 },
+                        { id: 'metal', quantity: 1 }
+                    ];
+                    break;
+            }
+            
+            // 检查是否有足够的材料(背包+仓库)
+            let hasEnoughMaterials = true;
+            requiredMaterials.forEach(material => {
+                const backpackQuantity = gameState.backpack.find(item => item.id === material.id)?.quantity || 0;
+                const storageQuantity = gameState.storage.find(item => item.id === material.id)?.quantity || 0;
+                
+                if (backpackQuantity + storageQuantity < material.quantity) {
+                    hasEnoughMaterials = false;
+                }
+            });
+            
+            if (!hasEnoughMaterials) {
+                addMessage(`建造${structureName}的材料不足`);
+                return;
+            }
+            
+            // 消耗材料(优先从背包中消耗)
+            requiredMaterials.forEach(material => {
+                let remaining = material.quantity;
+                
+                // 从背包中消耗
+                const backpackIndex = gameState.backpack.findIndex(item => item.id === material.id);
+                if (backpackIndex !== -1) {
+                    if (gameState.backpack[backpackIndex].quantity >= remaining) {
+                        gameState.backpack[backpackIndex].quantity -= remaining;
+                        if (gameState.backpack[backpackIndex].quantity === 0) {
+                            gameState.backpack.splice(backpackIndex, 1);
+                        }
+                        remaining = 0;
+                    } else {
+                        remaining -= gameState.backpack[backpackIndex].quantity;
+                        gameState.backpack.splice(backpackIndex, 1);
+                    }
+                }
+                
+                // 从仓库中消耗
+                if (remaining > 0) {
+                    const storageIndex = gameState.storage.findIndex(item => item.id === material.id);
+                    if (storageIndex !== -1) {
+                        gameState.storage[storageIndex].quantity -= remaining;
+                        if (gameState.storage[storageIndex].quantity === 0) {
+                            gameState.storage.splice(storageIndex, 1);
+                        }
+                    }
+                }
+                
+                addMessage(`消耗了${itemDatabase[material.id].name} x${material.quantity}`);
+            });
+            
+            // 添加建筑
+            gameState.structures.push(structure);
+            addMessage(`你成功建造了${structureName}`);
+            
+            // 关闭建造窗口
+            elements.buildModal.classList.add('hidden');
+            
+            updateUI();
+        }
+
+        // 合成物品
+        function craftItem(itemId) {
+            let requiredMaterials, itemName;
+            
+            switch(itemId) {
+                case 'axe':
+                    itemName = '简易斧子';
+                    requiredMaterials = [
+                        { id: 'wood', quantity: 3 },
+                        { id: 'stone', quantity: 1 }
+                    ];
+                    break;
+                case 'pickaxe':
+                    itemName = '简易镐子';
+                    requiredMaterials = [
+                        { id: 'wood', quantity: 2 },
+                        { id: 'stone', quantity: 3 }
+                    ];
+                    break;
+                case 'spear':
+                    itemName = '简易长矛';
+                    requiredMaterials = [
+                        { id: 'wood', quantity: 2 },
+                        { id: 'stone', quantity: 1 }
+                    ];
+                    break;
+                case 'bandage':
+                    itemName = '绷带';
+                    requiredMaterials = [
+                        { id: 'cloth', quantity: 2 }
+                    ];
+                    break;
+            }
+            
+            // 检查是否有足够的材料(背包+仓库)
+            let hasEnoughMaterials = true;
+            requiredMaterials.forEach(material => {
+                const backpackQuantity = gameState.backpack.find(item => item.id === material.id)?.quantity || 0;
+                const storageQuantity = gameState.storage.find(item => item.id === material.id)?.quantity || 0;
+                
+                if (backpackQuantity + storageQuantity < material.quantity) {
+                    hasEnoughMaterials = false;
+                }
+            });
+            
+            if (!hasEnoughMaterials) {
+                addMessage(`合成${itemName}的材料不足`);
+                return;
+            }
+            
+            // 消耗材料(优先从背包中消耗)
+            requiredMaterials.forEach(material => {
+                let remaining = material.quantity;
+                
+                // 从背包中消耗
+                const backpackIndex = gameState.backpack.findIndex(item => item.id === material.id);
+                if (backpackIndex !== -1) {
+                    if (gameState.backpack[backpackIndex].quantity >= remaining) {
+                        gameState.backpack[backpackIndex].quantity -= remaining;
+                        if (gameState.backpack[backpackIndex].quantity === 0) {
+                            gameState.backpack.splice(backpackIndex, 1);
+                        }
+                        remaining = 0;
+                    } else {
+                        remaining -= gameState.backpack[backpackIndex].quantity;
+                        gameState.backpack.splice(backpackIndex, 1);
+                    }
+                }
+                
+                // 从仓库中消耗
+                if (remaining > 0) {
+                    const storageIndex = gameState.storage.findIndex(item => item.id === material.id);
+                    if (storageIndex !== -1) {
+                        gameState.storage[storageIndex].quantity -= remaining;
+                        if (gameState.storage[storageIndex].quantity === 0) {
+                            gameState.storage.splice(storageIndex, 1);
+                        }
+                    }
+                }
+                
+                addMessage(`消耗了${itemDatabase[material.id].name} x${material.quantity}`);
+            });
+            
+            // 添加合成的物品到背包
+            const backpackIndex = gameState.backpack.findIndex(item => item.id === itemId);
+            if (backpackIndex !== -1) {
+                gameState.backpack[backpackIndex].quantity += 1;
+            } else {
+                gameState.backpack.push({ id: itemId, quantity: 1 });
+            }
+            
+            addMessage(`你成功合成了${itemName}`);
+            
+            // 关闭合成窗口
+            elements.craftModal.classList.add('hidden');
+            
+            updateUI();
+        }
+
+        // 烹饪食物
+        function cookRecipe(recipeId) {
+            let requiredItems, recipeName, resultItem;
+            
+            switch(recipeId) {
+                case 'cooked_meat':
+                    recipeName = '烤肉';
+                    resultItem = 'cooked_meat';
+                    requiredItems = [
+                        { id: 'meat', quantity: 1 }
+                    ];
+                    break;
+                case 'berry_pie':
+                    recipeName = '浆果派';
+                    resultItem = 'berry_pie';
+                    requiredItems = [
+                        { id: 'berry', quantity: 3 },
+                        { id: 'cloth', quantity: 1 }
+                    ];
+                    break;
+            }
+            
+            // 检查是否有足够的材料(仅背包中)
+            let hasEnoughItems = true;
+            requiredItems.forEach(item => {
+                const backpackQuantity = gameState.backpack.find(i => i.id === item.id)?.quantity || 0;
+                
+                if (backpackQuantity < item.quantity) {
+                    hasEnoughItems = false;
+                }
+            });
+            
+            if (!hasEnoughItems) {
+                addMessage(`烹饪${recipeName}的材料不足`);
+                return;
+            }
+            
+            // 消耗材料
+            requiredItems.forEach(item => {
+                const backpackIndex = gameState.backpack.findIndex(i => i.id === item.id);
+                if (backpackIndex !== -1) {
+                    gameState.backpack[backpackIndex].quantity -= item.quantity;
+                    if (gameState.backpack[backpackIndex].quantity === 0) {
+                        gameState.backpack.splice(backpackIndex, 1);
+                    }
+                }
+                
+                addMessage(`消耗了${itemDatabase[item.id].name} x${item.quantity}`);
+            });
+            
+            // 添加烹饪结果到背包
+            const backpackIndex = gameState.backpack.findIndex(item => item.id === resultItem);
+            if (backpackIndex !== -1) {
+                gameState.backpack[backpackIndex].quantity += 1;
+            } else {
+                gameState.backpack.push({ id: resultItem, quantity: 1 });
+            }
+            
+            addMessage(`你成功烹饪了${recipeName}`);
+            
+            // 关闭烹饪窗口
+            elements.cookModal.classList.add('hidden');
+            
+            updateUI();
+        }
+
+        // 分解物品
+        function recycleItem(itemId) {
+            const itemIndex = gameState.backpack.findIndex(item => item.id === itemId);
+            if (itemIndex === -1) return;
+            
+            const item = gameState.backpack[itemIndex];
+            const itemData = itemDatabase[item.id];
+            
+            // 定义分解结果
+            let recycleResults = [];
+            switch(itemId) {
+                case 'axe':
+                case 'pickaxe':
+                case 'spear':
+                    recycleResults = [
+                        { id: 'wood', quantity: 1 },
+                        { id: 'stone', quantity: 1 }
+                    ];
+                    break;
+                case 'bandage':
+                    recycleResults = [
+                        { id: 'cloth', quantity: 1 }
+                    ];
+                    break;
+            }
+            
+            // 减少物品数量
+            item.quantity--;
+            if (item.quantity === 0) {
+                gameState.backpack.splice(itemIndex, 1);
+            }
+            
+            addMessage(`你分解了${itemData.name}`);
+            
+            // 添加分解结果到背包
+            recycleResults.forEach(result => {
+                const backpackIndex = gameState.backpack.findIndex(i => i.id === result.id);
+                if (backpackIndex !== -1) {
+                    gameState.backpack[backpackIndex].quantity += result.quantity;
+                } else {
+                    gameState.backpack.push({ id: result.id, quantity: result.quantity });
+                }
+                
+                addMessage(`获得了${itemDatabase[result.id].name} x${result.quantity}`);
+            });
+            
+            updateUI();
+        }
+
+        // 游戏结束
+        function gameOver() {
+            // 显示游戏结束消息
+            addMessage("游戏结束！你在这个末日世界中未能生存下去...");
+            addMessage("刷新页面重新开始游戏");
+            
+            // 禁用所有按钮
+            document.querySelectorAll('button').forEach(btn => {
+                btn.disabled = true;
+                btn.classList.add('opacity-50', 'cursor-not-allowed');
+            });
+        }
+
+        // 设置事件监听器
+        function setupEventListeners() {
+            // 按钮点击事件
+            elements.btnExplore.addEventListener('click', () => {
+                elements.exploreModal.classList.remove('hidden');
+            });
+            
+            elements.btnBackpack.addEventListener('click', () => {
+                elements.backpackModal.classList.remove('hidden');
+            });
+            
+            elements.btnEat.addEventListener('click', () => {
+                elements.eatModal.classList.remove('hidden');
+            });
+            
+            elements.btnDrink.addEventListener('click', () => {
+                elements.drinkModal.classList.remove('hidden');
+            });
+            
+            elements.btnRest.addEventListener('click', rest);
+            
+            elements.btnCraft.addEventListener('click', () => {
+                elements.craftModal.classList.remove('hidden');
+            });
+            
+            elements.btnBuild.addEventListener('click', () => {
+                elements.buildModal.classList.remove('hidden');
+            });
+            
+            elements.btnStorage.addEventListener('click', () => {
+                elements.storageModal.classList.remove('hidden');
+            });
+            
+            elements.btnBatchStore.addEventListener('click', batchStore);
+            
+            elements.btnAttack.addEventListener('click', attackEnemy);
+            
+            elements.btnFlee.addEventListener('click', tryFlee);
+            
+            // 资源点探索
+            elements.resourceBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const resource = btn.dataset.resource;
+                    exploreResource(resource);
+                });
+            });
+            
+            // 地点探索
+            elements.exploreLocations.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const location = btn.dataset.location;
+                    exploreLocation(location);
+                });
+            });
+            
+            // 建造建筑
+            elements.buildBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const structure = btn.dataset.structure;
+                    buildStructure(structure);
+                });
+            });
+            
+            // 合成物品
+            elements.craftBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const item = btn.dataset.item;
+                    craftItem(item);
+                });
+            });
+            
+            // 烹饪食物
+            elements.cookBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const recipe = btn.dataset.recipe;
+                    cookRecipe(recipe);
+                });
+            });
+            
+            // 关闭模态窗口
+            elements.closeModals.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    btn.closest('.fixed').classList.add('hidden');
+                });
+            });
+            
+            // 点击模态窗口背景关闭
+            document.querySelectorAll('.fixed').forEach(modal => {
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        modal.classList.add('hidden');
+                    }
+                });
+            });
+        }
+
+        // 启动游戏
+        initGame();
+    </script>
+</body>
+</html>
