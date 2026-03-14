@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>小怪兽</title>
+    <link rel="icon" type="image/svg+xml" href="fevicon.svg">
     <link rel="stylesheet" href="css/style.css">
     <script charset="UTF-8" src="https://cdn.jsdelivr.net/npm/pinyinlite@latest/dist/pinyinlite.min.js"></script>
 </head>
@@ -14,13 +15,13 @@
             <input type="text" id="searchInput" placeholder="搜索内容..." class="search-box">
             <button class="search-clear" id="searchClear" title="清空搜索">✕</button>
         </div>
-        <button class="theme-toggle" id="themeToggle" title="切换主题">🌙</button>
+        <button class="theme-toggle" id="themeToggle" title="切换主题">亮</button>
     </header>
 
     <!-- 顶部导航栏（移动端） -->
     <header class="top-header">
         <button class="menu-toggle" id="menuToggle">☰</button>
-        <button class="theme-toggle theme-toggle-mobile" id="themeToggleMobile" title="切换主题">🌙</button>
+        <button class="theme-toggle theme-toggle-mobile" id="themeToggleMobile" title="切换主题">亮</button>
     </header>
 
     <!-- 搜索栏（移动端） -->
@@ -32,23 +33,18 @@
     </div>
 
     <div class="container">
+        <!-- 背景遮罩层 -->
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
         <!-- 左侧导航 -->
         <aside class="sidebar">
             <nav class="nav-menu">
-                <div class="nav-item has-submenu active" data-section="anime">
+                <div class="nav-item" data-section="anime">
                     小怪兽
                 </div>
-                <div class="sub-nav show">
-                    <a href="#anime-games" class="sub-nav-item active">游戏</a>
-                    <a href="#anime-software" class="sub-nav-item">软件</a>
-                    <a href="#anime-tools" class="sub-nav-item">工具</a>
-                </div>
                 
-                <div class="nav-item has-submenu" data-section="navigation">
+                <div class="nav-item" data-section="navigation">
                     网址导航
-                </div>
-                <div class="sub-nav">
-                    <a href="#navigation-sites" class="sub-nav-item">网站</a>
                 </div>
             </nav>
         </aside>
@@ -158,6 +154,18 @@
             </section>
         </main>
     </div>
+
+    <!-- 页脚版权声明 -->
+    <footer class="footer">
+        <div class="footer-content">
+            <p class="footer-text">© <span id="currentYear"></span> 小怪兽. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // 自动更新版权年份
+        document.getElementById('currentYear').textContent = new Date().getFullYear();
+    </script>
 
     <script src="js/main.js"></script>
 </body>

@@ -5,8 +5,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const searchInputMobile = document.getElementById('searchInputMobile');
     const searchClear = document.getElementById('searchClear');
     const searchClearMobile = document.getElementById('searchClearMobile');
-    const navItems = document.querySelectorAll('.nav-item.has-submenu');
-    const subNavItems = document.querySelectorAll('.sub-nav-item');
+    const navItems = document.querySelectorAll('.nav-item');
     const contentItems = document.querySelectorAll('.content-item');
     const subCategoryContents = document.querySelectorAll('.sub-category-content');
     const subTabs = document.querySelectorAll('.sub-tab');
@@ -14,6 +13,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const contentArea = document.querySelector('.content');
     const menuToggle = document.getElementById('menuToggle');
     const sidebar = document.querySelector('.sidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
     const themeToggle = document.getElementById('themeToggle');
     const themeToggleMobile = document.getElementById('themeToggleMobile');
     
@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const isDarkMode = document.body.classList.contains('dark-mode');
         
         // 更新按钮图标
-        const icon = isDarkMode ? '☀️' : '🌙';
+        const icon = isDarkMode ? '暗' : '亮';
         if (themeToggle) themeToggle.textContent = icon;
         if (themeToggleMobile) themeToggleMobile.textContent = icon;
         
@@ -40,8 +40,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const savedTheme = localStorage.getItem('theme');
         if (savedTheme === 'dark') {
             document.body.classList.add('dark-mode');
-            if (themeToggle) themeToggle.textContent = '☀️';
-            if (themeToggleMobile) themeToggleMobile.textContent = '☀️';
+            if (themeToggle) themeToggle.textContent = '暗';
+            if (themeToggleMobile) themeToggleMobile.textContent = '暗';
         }
     }
     
@@ -56,11 +56,23 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 页面加载时应用保存的主题
     loadTheme();
-    
+
     // 菜单按钮点击事件（移动端）
     if (menuToggle) {
         menuToggle.addEventListener('click', function() {
             sidebar.classList.toggle('show');
+            // 显示/隐藏遮罩层
+            if (sidebarOverlay) {
+                sidebarOverlay.classList.toggle('show');
+            }
+        });
+    }
+
+    // 点击遮罩层关闭菜单（移动端）
+    if (sidebarOverlay) {
+        sidebarOverlay.addEventListener('click', function() {
+            sidebar.classList.remove('show');
+            sidebarOverlay.classList.remove('show');
         });
     }
     
@@ -69,76 +81,15 @@ document.addEventListener('DOMContentLoaded', function() {
         contentArea.addEventListener('click', function() {
             if (window.innerWidth <= 768) {
                 sidebar.classList.remove('show');
+                if (sidebarOverlay) {
+                    sidebarOverlay.classList.remove('show');
+                }
             }
         });
     }
 
-    // 二级菜单点击展开/收起
+    // 一级菜单点击跳转
     navItems.forEach(item => {
-        item.addEventListener('click', function(e) {
-            e.preventDefault();
-            
-            const subNav = this.nextElementSibling;
-            if (!subNav || !subNav.classList.contains('sub-nav')) return;
-            
-            // 切换展开状态
-            const isExpanded = this.classList.contains('expanded');
-            
-            // 关闭所有其他展开的菜单，并移除激活状态
-            navItems.forEach(nav => {
-                nav.classList.remove('expanded');
-                nav.classList.remove('active');
-                const navSubNav = nav.nextElementSibling;
-                if (navSubNav && navSubNav.classList.contains('sub-nav')) {
-                    navSubNav.classList.remove('show');
-                }
-            });
-            
-            // 如果之前是收起状态，现在展开
-            if (!isExpanded) {
-                this.classList.add('expanded');
-                this.classList.add('active');
-                subNav.classList.add('show');
-                
-                // 激活对应的二级菜单项（第一个）
-                const firstSubNavItem = subNav.querySelector('.sub-nav-item');
-                if (firstSubNavItem) {
-                    subNavItems.forEach(nav => nav.classList.remove('active'));
-                    firstSubNavItem.classList.add('active');
-                }
-                
-                // 移动端点击一级菜单跳转到对应section
-                const sectionId = this.getAttribute('data-section');
-                if (sectionId) {
-                    const targetSection = document.getElementById(sectionId);
-                    if (targetSection) {
-                        // 标记为手动滚动
-                        isManualScroll = true;
-                        clearTimeout(scrollTimeout);
-                        scrollTimeout = setTimeout(() => {
-                            isManualScroll = false;
-                        }, 500);
-                        
-                        targetSection.scrollIntoView({
-                            behavior: 'smooth',
-                            block: 'start'
-                        });
-                    }
-                }
-            } else {
-                // 如果之前是展开状态，现在收起，移除active状态
-                this.classList.remove('active');
-            }
-            
-            // 移动端点击后关闭侧边栏
-            if (window.innerWidth <= 768) {
-                sidebar.classList.remove('show');
-            }
-        });
-    });
-
-    // 二级菜单点击跳转
-    subNavItems.forEach(item => {
         item.addEventListener('click', function(e) {
             e.preventDefault();
             
@@ -153,81 +104,34 @@ document.addEventListener('DOMContentLoaded', function() {
                 updateClearButton(searchInputActive, clearButtonActive);
             }
             
-            // 更新激活状态
-            subNavItems.forEach(nav => nav.classList.remove('active'));
-            this.classList.add('active');
-            
-            // 更新一级菜单激活状态
-            const parentSubNav = this.closest('.sub-nav');
-            const parentNavItem = parentSubNav.previousElementSibling;
-            navItems.forEach(nav => nav.classList.remove('active'));
-            if (parentNavItem) {
-                parentNavItem.classList.add('active');
-            }
-            
-            // 获取目标区域ID
-            const targetId = this.getAttribute('href').substring(1);
-            const targetElement = document.getElementById(targetId);
-            
-            if (targetElement) {
-                // 检查是否是小分类内容
-                if (targetElement.classList.contains('sub-category-content')) {
-                    // 激活对应的小分类标签
-                    const section = targetElement.closest('.category-section');
-                    const sectionId = section.getAttribute('id');
-                    const tabName = targetId.replace(`${sectionId}-`, '');
+            // 跳转到对应section
+            const sectionId = this.getAttribute('data-section');
+            if (sectionId) {
+                const targetSection = document.getElementById(sectionId);
+                if (targetSection) {
+                    // 标记为手动滚动
+                    isManualScroll = true;
+                    clearTimeout(scrollTimeout);
+                    scrollTimeout = setTimeout(() => {
+                        isManualScroll = false;
+                    }, 500);
                     
-                    section.querySelectorAll('.sub-tab').forEach(tab => {
-                        tab.classList.remove('active');
-                        if (tab.getAttribute('data-tab') === tabName) {
-                            tab.classList.add('active');
-                        }
+                    // 根据设备类型设置不同的偏移量
+                    const isMobile = window.innerWidth <= 768;
+                    const offset = isMobile ? 110 : 90; // 移动端110px(顶栏50+搜索50+额外10)，桌面端90px(顶栏80+额外10)
+                    const elementPosition = targetSection.getBoundingClientRect().top;
+                    const offsetPosition = elementPosition + window.pageYOffset - offset;
+
+                    window.scrollTo({
+                        top: offsetPosition,
+                        behavior: 'smooth'
                     });
-                    
-                    section.querySelectorAll('.sub-category-content').forEach(content => {
-                        content.classList.remove('active');
-                        content.style.display = 'none';
-                    });
-                    targetElement.classList.add('active');
-                    targetElement.style.display = 'block';
-                    
-                    // 移动端：先关闭侧边栏，再滚动
+
+                    // 移动端点击后关闭侧边栏和遮罩层
                     if (window.innerWidth <= 768) {
                         sidebar.classList.remove('show');
-                        
-                        // 延迟滚动，确保侧边栏关闭后再滚动
-                        setTimeout(() => {
-                            // 滚动到大分类的位置
-                            const sectionElement = document.getElementById(sectionId);
-                            if (sectionElement) {
-                                // 标记为手动滚动
-                                isManualScroll = true;
-                                clearTimeout(scrollTimeout);
-                                scrollTimeout = setTimeout(() => {
-                                    isManualScroll = false;
-                                }, 500);
-                                
-                                sectionElement.scrollIntoView({
-                                    behavior: 'smooth',
-                                    block: 'start'
-                                });
-                            }
-                        }, 300);
-                    } else {
-                        // 桌面端：直接滚动
-                        const sectionElement = document.getElementById(sectionId);
-                        if (sectionElement) {
-                            // 标记为手动滚动
-                            isManualScroll = true;
-                            clearTimeout(scrollTimeout);
-                            scrollTimeout = setTimeout(() => {
-                                isManualScroll = false;
-                            }, 500);
-                            
-                            sectionElement.scrollIntoView({
-                                behavior: 'smooth',
-                                block: 'start'
-                            });
+                        if (sidebarOverlay) {
+                            sidebarOverlay.classList.remove('show');
                         }
                     }
                 }
@@ -599,78 +503,27 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
 
-            // 更新导航激活状态
-            if (currentSection) {
+            // PC端不更新导航激活状态，只在移动端更新
+            if (currentSection && window.innerWidth <= 768) {
                 // 更新一级菜单
                 navItems.forEach(nav => {
                     nav.classList.remove('active');
                     if (nav.getAttribute('data-section') === currentSection) {
                         nav.classList.add('active');
-                        // 确保对应的二级菜单展开
-                        const subNav = nav.nextElementSibling;
-                        if (subNav && subNav.classList.contains('sub-nav')) {
-                            nav.classList.add('expanded');
-                            subNav.classList.add('show');
-                        }
                     }
                 });
-                
-                // 更新二级菜单
-                subNavItems.forEach(nav => {
-                    nav.classList.remove('active');
-                    const targetId = nav.getAttribute('href').substring(1);
-                    if (targetId === currentSection || targetId === currentSubCategory) {
-                        nav.classList.add('active');
-                    }
-                });
-            }
-
-            // 在移动端，确保激活的导航项滚动到可视区域
-            if (window.innerWidth <= 768 && currentSection) {
-                const activeSubNav = document.querySelector(`.sub-nav-item[href="#${currentSubCategory || currentSection}"]`);
-                if (activeSubNav) {
-                    activeSubNav.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-                }
             }
 
             isScrolling = false;
         });
     });
 
-    // 初始化时确保第一个可见的大分类被激活
+    // 初始化时不激活任何菜单
     function initializeActiveNav() {
-        const firstVisibleSection = Array.from(sections).find(section => 
-            section.style.display !== 'none'
-        );
-        
-        if (firstVisibleSection) {
-            const sectionId = firstVisibleSection.getAttribute('id');
-            
-            // 更新一级菜单
-            navItems.forEach(nav => {
-                nav.classList.remove('active');
-                if (nav.getAttribute('data-section') === sectionId) {
-                    nav.classList.add('active');
-                    const subNav = nav.nextElementSibling;
-                    if (subNav && subNav.classList.contains('sub-nav')) {
-                        nav.classList.add('expanded');
-                        subNav.classList.add('show');
-                    }
-                }
-            });
-            
-            // 更新二级菜单
-            const activeContent = firstVisibleSection.querySelector('.sub-category-content.active');
-            if (activeContent) {
-                const subCategoryId = activeContent.getAttribute('id');
-                subNavItems.forEach(nav => {
-                    nav.classList.remove('active');
-                    if (nav.getAttribute('href') === `#${subCategoryId}`) {
-                        nav.classList.add('active');
-                    }
-                });
-            }
-        }
+        // 移除所有菜单的激活状态
+        navItems.forEach(nav => {
+            nav.classList.remove('active');
+        });
     }
 
     // 页面加载完成后初始化
