@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小怪兽</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script charset="UTF-8" src="https://cdn.jsdelivr.net/npm/pinyinlite@latest/dist/pinyinlite.min.js"></script>
+</head>
+<body>
+    <!-- 顶部搜索框（桌面端） -->
+    <header class="search-header">
+        <div class="search-container">
+            <input type="text" id="searchInput" placeholder="搜索内容..." class="search-box">
+            <button class="search-clear" id="searchClear" title="清空搜索">✕</button>
+        </div>
+        <button class="theme-toggle" id="themeToggle" title="切换主题">🌙</button>
+    </header>
+
+    <!-- 顶部导航栏（移动端） -->
+    <header class="top-header">
+        <button class="menu-toggle" id="menuToggle">☰</button>
+        <button class="theme-toggle theme-toggle-mobile" id="themeToggleMobile" title="切换主题">🌙</button>
+    </header>
+
+    <!-- 搜索栏（移动端） -->
+    <div class="search-bar">
+        <div class="search-container">
+            <input type="text" id="searchInputMobile" placeholder="搜索内容..." class="search-box">
+            <button class="search-clear search-clear-mobile" id="searchClearMobile" title="清空搜索">✕</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- 左侧导航 -->
+        <aside class="sidebar">
+            <nav class="nav-menu">
+                <div class="nav-item has-submenu active" data-section="anime">
+                    小怪兽
+                </div>
+                <div class="sub-nav show">
+                    <a href="#anime-games" class="sub-nav-item active">游戏</a>
+                    <a href="#anime-software" class="sub-nav-item">软件</a>
+                    <a href="#anime-tools" class="sub-nav-item">工具</a>
+                </div>
+                
+                <div class="nav-item has-submenu" data-section="navigation">
+                    网址导航
+                </div>
+                <div class="sub-nav">
+                    <a href="#navigation-sites" class="sub-nav-item">网站</a>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- 右侧内容区 -->
+        <main class="content">
+            <!-- 搜索结果页面 -->
+            <section id="search-results" class="category-section" style="display: none;">
+                <div class="category-header">
+                    <h2 class="category-title">搜索结果</h2>
+                </div>
+                <div class="content-list" id="search-results-list">
+                    <!-- 搜索结果将动态插入到这里 -->
+                </div>
+            </section>
+
+            <!-- 大分类：动漫资源 -->
+            <section id="anime" class="category-section">
+                <div class="category-header">
+                    <h2 class="category-title">小怪兽</h2>
+                    <!-- 小分类标签 -->
+                    <div class="sub-category-tabs">
+                        <button class="sub-tab active" data-tab="games">游戏</button>
+                        <button class="sub-tab" data-tab="software">软件</button>
+                        <button class="sub-tab" data-tab="tools">工具</button>
+                    </div>
+                </div>
+                
+                <!-- 小分类：游戏 -->
+                <div class="sub-category-content active" id="anime-games">
+                    <div class="content-list">
+                        <a href="#" class="content-item">
+                            <div class="content-item-title">RPG游戏</div>
+                            <div class="content-item-desc">《未命名》(暂未添加)</div>
+                        </a>
+                        <a href="html/games/shopgame.html" class="content-item">
+                            <div class="content-item-title">小游戏</div>
+                            <div class="content-item-desc">我的小店</div>
+                        </a>
+                        <a href="html/games/farmgame.html" class="content-item">
+                            <div class="content-item-title">小游戏</div>
+                            <div class="content-item-desc">我的农场</div>
+                        </a>
+                        <a href="html/games/rpgroguelike.html" class="content-item">
+                            <div class="content-item-title">小游戏</div>
+                            <div class="content-item-desc">肉鸽冒险</div>
+                        </a>
+                        <a href="html/games/scgame.html" class="content-item">
+                            <div class="content-item-title">小游戏</div>
+                            <div class="content-item-desc">生存冒险</div>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- 小分类：软件 -->
+                <div class="sub-category-content" id="anime-software">
+                    <div class="content-list">
+                        <a href="#" class="content-item">
+                            <div class="content-item-title">Minecraft</div>
+                            <div class="content-item-desc">数据包工具(暂未添加)</div>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- 小分类：资讯社区 -->
+                <div class="sub-category-content" id="anime-tools">
+                    <div class="content-list">
+                        <a href="html/games/Sky/Skyindex.html" class="content-item">
+                            <div class="content-item-title">光遇</div>
+                            <div class="content-item-desc">光遇工具合集</div>
+                        </a>
+                        <a href="html/tools/PDF.html" class="content-item">
+                            <div class="content-item-title">压缩工具</div>
+                            <div class="content-item-desc">PDF压缩</div>
+                        </a>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 大分类：网址导航 -->
+            <section id="navigation" class="category-section">
+                <div class="category-header">
+                    <h2 class="category-title">网址导航</h2>
+                    <!-- 小分类标签 -->
+                    <div class="sub-category-tabs">
+                        <button class="sub-tab active" data-tab="sites">网站</button>
+                    </div>
+                </div>
+
+                <!-- 小分类：网站 -->
+                <div class="sub-category-content active" id="navigation-sites">
+                    <div class="content-list">
+                        <a href="https://fb.omoo.tv/" class="content-item">
+                            <div class="content-item-title">omofun</div>
+                            <div class="content-item-desc">omofun发布页</div>
+                        </a>
+                        <a href="https://www.omoo.app/" class="content-item">
+                            <div class="content-item-title">omofun</div>
+                            <div class="content-item-desc">omofun下载</div>
+                        </a>
+                        <a href="https://yinghezhinan.com/" class="content-item">
+                            <div class="content-item-title">硬核指南</div>
+                            <div class="content-item-desc">硬核指南主页</div>
+                        </a>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="js/main.js"></script>
+</body>
+</html>
