@@ -1,0 +1,445 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小怪兽加密聊天</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/peerjs@1.5.5/dist/peerjs.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        .chat-container {
+            height: calc(100vh - 140px);
+            overflow-y: auto;
+        }
+        .message-self {
+            align-self: flex-end;
+            background-color: #3b82f6;
+            color: white;
+        }
+        .message-other {
+            align-self: flex-start;
+            background-color: #e5e7eb;
+            color: #111827;
+        }
+        .file-thumbnail {
+            max-width: 200px;
+            max-height: 150px;
+            border-radius: 8px;
+            cursor: pointer;
+            object-fit: cover;
+        }
+        .preview-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.9);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .preview-content {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+        }
+        .scrollbar-thin::-webkit-scrollbar {
+            width: 6px;
+        }
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <!-- 登录页面 -->
+    <div id="login-page" class="flex items-center justify-center min-h-screen">
+        <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
+            <h1 class="text-2xl font-bold text-center text-gray-800 mb-6">小怪兽聊天</h1>
+            <p class="text-gray-500 text-center text-sm mb-6">两人输入相同密码即可配对</p>
+            <form id="login-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">你的昵称</label>
+                    <input type="text" id="nickname" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="输入你的昵称">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">配对密码</label>
+                    <input type="password" id="password" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="输入配对密码，两人需相同">
+                </div>
+                <button type="submit" id="connect-btn" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+                    开始配对
+                </button>
+                <p id="status-text" class="text-center text-sm text-gray-500 mt-2"></p>
+            </form>
+        </div>
+    </div>
+
+    <!-- 聊天页面 -->
+    <div id="chat-page" class="hidden max-w-4xl mx-auto p-4">
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+            <div class="bg-blue-500 text-white px-4 py-3 flex justify-between items-center">
+                <h2 class="font-bold">小怪兽聊天室</h2>
+                <span id="connection-status" class="text-sm">已连接</span>
+            </div>
+            <div id="messages" class="chat-container p-4 flex flex-col gap-3 scrollbar-thin">
+                <!-- 消息会在这里动态添加 -->
+            </div>
+            <div class="border-t p-4">
+                <form id="chat-form" class="flex gap-2">
+                    <input type="text" id="message-input" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="输入消息...">
+                    <label class="cursor-pointer bg-gray-200 hover:bg-gray-300 p-2 rounded-lg transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <input type="file" id="file-input" accept="image/*,video/*" class="hidden">
+                    </label>
+                    <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors">
+                        发送
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 预览弹窗 -->
+    <div id="preview-modal" class="preview-modal hidden">
+        <button id="close-preview" class="absolute top-4 right-4 text-white bg-black/50 hover:bg-black/70 p-2 rounded-full transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
+        <button id="download-btn" class="absolute bottom-4 right-4 text-white bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-lg transition-colors">
+            下载文件
+        </button>
+        <img id="preview-img" class="preview-content hidden">
+        <video id="preview-video" class="preview-content hidden" controls></video>
+    </div>
+
+    <script>
+        // 全局变量
+        let peer = null;
+        let conn = null;
+        let myNickname = '';
+        let currentFileMeta = null;
+        let currentFileData = null;
+        let currentPreviewFile = null;
+
+        // DOM元素
+        const loginPage = document.getElementById('login-page');
+        const chatPage = document.getElementById('chat-page');
+        const loginForm = document.getElementById('login-form');
+        const statusText = document.getElementById('status-text');
+        const messagesContainer = document.getElementById('messages');
+        const chatForm = document.getElementById('chat-form');
+        const messageInput = document.getElementById('message-input');
+        const fileInput = document.getElementById('file-input');
+        const previewModal = document.getElementById('preview-modal');
+        const previewImg = document.getElementById('preview-img');
+        const previewVideo = document.getElementById('preview-video');
+        const closePreview = document.getElementById('close-preview');
+        const downloadBtn = document.getElementById('download-btn');
+
+        // SHA-256 哈希函数，用于把密码转成Peer ID
+        async function hashPassword(password) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(password);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            // 取前16位作为Peer ID，避免太长
+            return hashHex.slice(0, 16);
+        }
+
+        // 添加消息到聊天窗口
+        function addMessage(nickname, content, isSelf, isFile = false, fileData = null) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `flex flex-col ${isSelf ? 'items-end' : 'items-start'}`;
+            
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'text-xs text-gray-500 mb-1';
+            nameSpan.textContent = nickname;
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = `px-4 py-2 rounded-2xl max-w-xs sm:max-w-md md:max-w-lg ${isSelf ? 'message-self' : 'message-other'}`;
+            
+            if (isFile && fileData) {
+                // 文件消息
+                if (fileData.type.startsWith('image/')) {
+                    const img = document.createElement('img');
+                    img.src = fileData.url;
+                    img.className = 'file-thumbnail';
+                    img.alt = fileData.name;
+                    img.onclick = () => openPreview(fileData);
+                    contentDiv.appendChild(img);
+                } else if (fileData.type.startsWith('video/')) {
+                    const video = document.createElement('video');
+                    video.src = fileData.url;
+                    video.className = 'file-thumbnail';
+                    video.controls = false;
+                    video.onclick = () => openPreview(fileData);
+                    contentDiv.appendChild(video);
+                }
+                const fileName = document.createElement('p');
+                fileName.className = 'text-xs mt-1 opacity-80';
+                fileName.textContent = fileData.name;
+                contentDiv.appendChild(fileName);
+            } else {
+                // 文本消息
+                contentDiv.textContent = content;
+            }
+            
+            messageDiv.appendChild(nameSpan);
+            messageDiv.appendChild(contentDiv);
+            messagesContainer.appendChild(messageDiv);
+            
+            // 滚动到底部
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        // 打开预览
+        function openPreview(fileData) {
+            currentPreviewFile = fileData;
+            if (fileData.type.startsWith('image/')) {
+                previewImg.src = fileData.url;
+                previewImg.classList.remove('hidden');
+                previewVideo.classList.add('hidden');
+            } else if (fileData.type.startsWith('video/')) {
+                previewVideo.src = fileData.url;
+                previewVideo.classList.remove('hidden');
+                previewImg.classList.add('hidden');
+            }
+            previewModal.classList.remove('hidden');
+        }
+
+        // 关闭预览
+        function closePreviewModal() {
+            previewModal.classList.add('hidden');
+            previewImg.src = '';
+            previewVideo.src = '';
+            currentPreviewFile = null;
+        }
+
+        // 下载文件
+        function downloadFile() {
+            if (!currentPreviewFile) return;
+            const a = document.createElement('a');
+            a.href = currentPreviewFile.url;
+            a.download = currentPreviewFile.name;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        // 发送文件
+        async function sendFile(file) {
+            if (!conn || conn.open !== true) return;
+            
+            // 先发送文件元信息
+            const meta = {
+                type: 'file-meta',
+                nickname: myNickname,
+                name: file.name,
+                size: file.size,
+                mimeType: file.type
+            };
+            conn.send(JSON.stringify(meta));
+            
+            // 直接发送整个文件Blob，PeerJS会自动处理分片和可靠传输
+            conn.send(file);
+            
+            // 自己这边也添加消息
+            const url = URL.createObjectURL(file);
+            addMessage(myNickname, '', true, true, {
+                name: file.name,
+                type: file.type,
+                url: url
+            });
+        }
+
+        // 初始化连接
+        async function initConnection(nickname, password) {
+            myNickname = nickname;
+            statusText.textContent = '正在生成配对ID...';
+            
+            const peerId = await hashPassword(password);
+            statusText.textContent = '正在尝试配对...';
+            
+            try {
+                // 先尝试自己注册这个配对ID，如果成功说明我是第一个，等待对方连接
+                peer = new Peer(peerId, {
+                    reliable: true
+                });
+                
+                peer.on('open', () => {
+                    // 注册ID成功，等待对方加入
+                    statusText.textContent = '等待对方加入...';
+                });
+                
+                // 监听对方的连接请求
+                peer.on('connection', (c) => {
+                    conn = c;
+                    setupConnectionHandlers();
+                });
+                
+                peer.on('error', (err) => {
+                    console.error(err);
+                    if (err.type === 'unavailable-id') {
+                        // ID已经被占用，说明对方已经注册了这个ID，我主动去连接他
+                        statusText.textContent = '正在连接对方...';
+                        peer.destroy();
+                        // 创建匿名Peer，主动连接对方
+                        peer = new Peer({
+                            reliable: true
+                        });
+                        
+                        peer.on('open', () => {
+                            // 连接对方的Peer ID
+                            conn = peer.connect(peerId, {
+                                reliable: true
+                            });
+                            setupConnectionHandlers();
+                        });
+                        
+                        peer.on('error', (e) => {
+                            console.error(e);
+                            statusText.textContent = '连接出错: ' + e.message;
+                        });
+                    } else {
+                        statusText.textContent = '连接出错: ' + err.message;
+                    }
+                });
+                
+            } catch (e) {
+                statusText.textContent = '初始化失败: ' + e.message;
+            }
+        }
+
+        // 设置连接的事件处理
+        function setupConnectionHandlers() {
+            conn.on('open', () => {
+                // 连接成功，切换到聊天页面
+                loginPage.classList.add('hidden');
+                chatPage.classList.remove('hidden');
+                statusText.textContent = '';
+            });
+            
+            conn.on('data', (data) => {
+                if (typeof data === 'string') {
+                    // JSON文本/文件元消息
+                    try {
+                        const msg = JSON.parse(data);
+                        if (msg.type === 'text') {
+                            // 文本消息
+                            addMessage(msg.nickname, msg.content, false);
+                        } else if (msg.type === 'file-meta') {
+                            // 文件元信息，接下来的二进制消息就是完整的文件数据
+                            currentFileMeta = msg;
+                        }
+                    } catch (e) {
+                        console.error('解析消息失败', e);
+                    }
+                } else {
+                    // 文件二进制数据，元信息之后直接接收处理
+                    if (currentFileMeta) {
+                        let blob;
+                        if (data instanceof Blob) {
+                            blob = data;
+                        } else {
+                            blob = new Blob([data], {type: currentFileMeta.mimeType});
+                        }
+                        const url = URL.createObjectURL(blob);
+                        addMessage(currentFileMeta.nickname, '', false, true, {
+                            name: currentFileMeta.name,
+                            type: currentFileMeta.mimeType,
+                            url: url
+                        });
+                        // 处理完清空状态，准备下一个消息
+                        currentFileMeta = null;
+                    }
+                }
+            });
+            
+            conn.on('close', () => {
+                document.getElementById('connection-status').textContent = '已断开连接';
+            });
+            
+            conn.on('error', (err) => {
+                console.error('连接错误', err);
+                document.getElementById('connection-status').textContent = '连接出错';
+            });
+        }
+
+        // 事件监听
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const nickname = document.getElementById('nickname').value.trim();
+            const password = document.getElementById('password').value.trim();
+            if (nickname && password) {
+                initConnection(nickname, password);
+            }
+        });
+
+        chatForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const text = messageInput.value.trim();
+            if (text && conn && conn.open) {
+                // 发送文本消息
+                conn.send(JSON.stringify({
+                    type: 'text',
+                    nickname: myNickname,
+                    content: text
+                }));
+                // 自己添加消息
+                addMessage(myNickname, text, true);
+                messageInput.value = '';
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                sendFile(file);
+                fileInput.value = ''; // 重置，方便重复选
+            }
+        });
+
+        closePreview.addEventListener('click', closePreviewModal);
+        downloadBtn.addEventListener('click', downloadFile);
+        previewModal.addEventListener('click', (e) => {
+            if (e.target === previewModal) {
+                closePreviewModal();
+            }
+        });
+
+        // 按回车发送
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                chatForm.dispatchEvent(new Event('submit'));
+            }
+        });
+
+        // 页面卸载时清理
+        window.addEventListener('beforeunload', () => {
+            if (peer) {
+                peer.destroy();
+            }
+            if (conn) {
+                conn.close();
+            }
+        });
+    </script>
+</body>
+</html>
